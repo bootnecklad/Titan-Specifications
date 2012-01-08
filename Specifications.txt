@@ -1,0 +1,145 @@
+Titan - expanded instruction set.
+
+0000 NOP
+0001 ADD
+0010 SUB
+0011 AND
+0100 LOR
+0101 XOR
+0110 NOT
+0111 PSH
+1000 POP
+1001 MOV
+1010 JMP
+1011 JPI
+1100 JSR
+1101 LDC
+1110 LDM
+1111 STM
+
+
+
+
+ADD, SUB, AND, LOR, XOR:
+
+Syntax: ADD Rn,Rn
+
+Assembled:
+
+0001 0000
+XXXX YYYY
+
+Where, XXXX & YYYY is register operand for Rn.
+
+
+
+
+NOT:
+
+NOT Rn
+
+Assembled:
+
+0110 XXXX
+
+Where, XXXX is register operand for Rn.
+
+
+
+PSH, POP (Push and Pop, stack operations):
+
+Syntax: PSH Rn, POP Rn
+
+Assembled: 0111 XXXX
+
+Where, XXXX is register operand for Rn.
+
+
+
+MOV (Move):
+
+MOV Rn,Rn
+
+Assembled:
+
+1001 0000
+XXXX YYYY 
+
+Where, XXXX & YYYY is register operand for Rn.
+
+
+
+JMP (Jump Direct):
+
+Included: JMP, JPZ, JPS, JPC
+
+Only JMP has indexed addressing.
+
+Opcode    I    Src
+-------  ---  -----
+1 0 0 1   0   0 0 0   -  JMP 0xZZZZ - Standard direct jump to 0xZZZZ
+1 0 0 1   0   0 0 1   -  JPZ 0xZZZZ - Standard jump if zero flag set
+1 0 0 1   0   0 1 0   -  JPS 0xZZZZ - Standard jump if sign flag set
+1 0 0 1   0   0 1 1   -  JPC 0xZZZZ - Standard jump if carry flag set
+1 0 0 1   1   0 0 0   -  JMI 0xZZZZ - Where SSS is the source register, offset by R0, address to jump to is 0xZZZZ + Value in R0.
+
+
+
+JPI (Jump Indirect):
+
+JPI 0xZZZZ
+
+Indirect jump, point to a location in memory(0xZZZZ) and jumps to the value stored in the address (Big endian)
+
+Assembled:
+
+1011 0000
+YYYY YYYY
+YYYY YYYY
+
+Where, YYYY YYYY YYYY YYYY is the address stored in ZZZZ and ZZZZ+1
+
+
+
+JSR (Jump Subroutine):
+
+JSR 0xZZ
+
+Assembled:
+
+1100 0000
+XXXX XXXX
+
+Where, XXXX XXXX is 0xZZ.
+
+
+
+LDC (Load Constant):
+
+LDC Rn,0xXX
+
+Assembled:
+
+1101 YYYY
+XXXX XXXX
+
+Where, XXXX XXXX is 0xXX and YYYY is operand for Rn.
+
+
+
+LDM+STM (Load/Store Memory):
+
+LDM Rn,0xYYYY
+LDI Rn,0xYYYY
+
+STM Rn,0xYYYY
+STI Rn,0xYYYY
+
+Assembled:
+
+Opcode    I    Src
+-------  ---  -----
+1 1 1 0   0   D D D   -  LDM 0xYYYY - Standard load byte from memory, from address YYYY to DDD.
+1 1 1 0   1   D D D   -  LDM 0xYYYY - Indexed load byte from memory, from address YYYY+R0 to DDD.
+1 1 1 1   0   S S S   -  STM 0xZZZZ - Standard store byte to memory, to address ZZZZ, byte from SSS.
+1 1 1 1   1   S S S   -  STM 0xZZZZ - Indexed store byte to memory, to address ZZZZ+R0, byte from SSS.
