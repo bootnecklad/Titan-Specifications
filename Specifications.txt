@@ -136,12 +136,10 @@ Where, XXXX XXXX is 0xXX and YYYY is operand for Rn.
 LDM+STM (Load/Store Memory):
 
 LDM Rn,0xYYYY
-LDI Rn,0xYYYY
-LID Rn,0xYYYY
+LDI Rn,0xYY
 
 STM Rn,0xYYYY
-STI Rn,0xYYYY
-SIT Rn,0xYYYY
+STI Rn,0xYY
 
 Assembled:
 
