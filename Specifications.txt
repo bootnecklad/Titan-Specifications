@@ -1,4 +1,4 @@
-Titan - expanded instruction set.
+Titan - expanded instruction set. AWESOME!
 
 0000 NOP
 0001 ADD
