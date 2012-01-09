@@ -86,8 +86,7 @@ Opcode    I    Src
 1 0 0 1   0   0 0 1   -  JPZ 0xZZZZ - Standard jump if zero flag set
 1 0 0 1   0   0 1 0   -  JPS 0xZZZZ - Standard jump if sign flag set
 1 0 0 1   0   0 1 1   -  JPC 0xZZZZ - Standard jump if carry flag set
-1 0 0 1   1   0 0 0   -  JMI 0xZZZZ - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZZZ
-1 0 0 1   1   0 0 1   -  JIP 0xZZZZ - Where the base address is 0xZZZZ and the offset is in R1(high byte) and R2(low byte)
+1 0 0 1   1   0 0 0   -  JMI 0xZZZZ - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZ
 
 
 
@@ -146,10 +145,8 @@ SIT Rn,0xYYYY
 
 Assembled:
 
-1 1 1 0   0   0 D D   -  LDM 0xYYYY - Standard load byte from memory, from address YYYY to DD.
-1 1 1 0   0   1 D D   -  LDI 0xYYYY - Indexed load byte from memory, from address YYYY offset in R1(high byte) and R2 (low byte)
-1 1 1 0   1   0 D D   -  LID 0xYYYY - Indexed load byte from memory, from address R1(high byte) R2(low byte) plus 0xYYYY(offset)
+1 1 1 0   0   D D D   -  LDM Rn,0xYYYY - Standard load byte from memory, from address YYYY to DDD.
+1 1 1 0   1   D D D   -  LDI Rn,0xYY - Indexed load byte from memory, from base address in R0(high byte) and R1(low byte), offset is 0xYY
 
-1 1 1 1   0   0 S S   -  STM 0xZZZZ - Standard store byte to memory, to address ZZZZ, byte from SSS.
-1 1 1 1   0   1 S S   -  STM 0xZZZZ - Indexed store byte to memory, to address ZZZZ offset in R1(high byte) and R2 (low byte)
-1 1 1 1   1   0 S S   -  LID 0xZZZZ - Indexed store byte to memory, to address R1(high byte) R2(low byte) plus 0xYYYY(offset)
+1 1 1 1   0   D S S   -  STM Rn,0xZZZZ - Standard store byte to memory, to address ZZZZ, byte from SSS.
+1 1 1 1   1   D S S   -  STM Rn,0xZZZZ - Indexed store byte to memory, to base address in R0(high byte) and R1(low byte), offset is 0xYY
