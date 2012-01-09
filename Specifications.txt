@@ -22,14 +22,17 @@ Titan - expanded instruction set.
 
 ADD, SUB, AND, LOR, XOR:
 
-Syntax: ADD Rn,Rn
+Syntax: ADD Rd,Rs
+
+Rs = SOURCE REGISTER
+Rd = DESTINATION REGISTER
 
 Assembled:
 
 0001 0000
-XXXX YYYY
+SSSS DDDD
 
-Where, XXXX & YYYY is register operand for Rn.
+Where, SSSS and DDDD are the register operands for source and destination registers
 
 
 
@@ -58,14 +61,16 @@ Where, XXXX is register operand for Rn.
 
 MOV (Move):
 
-MOV Rn,Rn
+MOV Rd,Rs
+
+Rs = SOURCE REGISTER
+Rd = DESTINATION REGISTER
 
 Assembled:
 
 1001 0000
-XXXX YYYY 
-
-Where, XXXX & YYYY is register operand for Rn.
+SSSS DDDD
+Where, SSSS and DDDD are the register operands for source and destination registers
 
 
 
@@ -81,7 +86,7 @@ Opcode    I    Src
 1 0 0 1   0   0 0 1   -  JPZ 0xZZZZ - Standard jump if zero flag set
 1 0 0 1   0   0 1 0   -  JPS 0xZZZZ - Standard jump if sign flag set
 1 0 0 1   0   0 1 1   -  JPC 0xZZZZ - Standard jump if carry flag set
-1 0 0 1   1   0 0 0   -  JMI 0xZZZZ - Where SSS is the source register, offset by R0, address to jump to is 0xZZZZ + Value in R0.
+1 0 0 1   1   0 0 0   -  JMI 0xZZZZ - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZZZ
 
 
 
@@ -103,14 +108,15 @@ Where, YYYY YYYY YYYY YYYY is the address stored in ZZZZ and ZZZZ+1
 
 JSR (Jump Subroutine):
 
-JSR 0xZZ
+JSR 0xZZZZ
 
 Assembled:
 
 1100 0000
 XXXX XXXX
+XXXX XXXX
 
-Where, XXXX XXXX is 0xZZ.
+Where, XXXX XXXX is 0xZZZZ.
 
 
 
