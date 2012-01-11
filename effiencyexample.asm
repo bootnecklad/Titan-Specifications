@@ -1,13 +1,12 @@
 ; One of first Titan Assembly programs ever written
-; I found it in an old backup of website from when I
-; Began the project
+; I found it in an old backup of website from when I began the project
 ; First is the ORIGINAL program and the assembled machine code
 ; Then the NEW assembly program followed by the assembled machine code
 ; I believe there has been much improvement
 ;
 ; Number of bytes in old program: 19 bytes
 ; Number of bytes in new program: 9 bytes
-; (9/(9+19)*100 = 32% more efficient!
+; (9/(9+19))*100 = 32% more efficient!
 ;
 ; This shows that the new ISA is a success in this case. :>
 ;
@@ -62,7 +61,6 @@ BEGIN:
 
 END:
    JMP END       ; Continuous loop
-
 
 
 Machine code:
