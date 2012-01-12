@@ -1,3 +1,39 @@
+; This is the basic MonitorOS for Titan.
+; When assembled and the binary entered into Titan's memory, MonitorOS will show '>' prompt at the serial terminal.
+; Bytes can be loaded into memory by typing a two byte address in hex, then a space, then the byte to be dumped.
+;
+; The below example shows 0xFE being entered into the address 0x0F07.
+;
+; > 0F07 FE
+; >
+;
+; The following example shows the address 0x0F8A being read
+;
+; > 0F8A/FF
+; >
+;
+; As you can see 0x0F8A contains the byte 0xFF
+;
+;
+; This file is the MonitorOS for Marc Cleave's Titan Processor
+; Copyright (C) 2011 Marc Cleave, bootnecklad@gmail.com
+;
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; 
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, write to the Free Software
+; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+;
+
+
 BEGIN:
    LDC R2,0X01 ; NEEDED TO DECREMENT THINGS
    LDC R1,0X05 ; NUMBER OF BYTES TO GET FROM SERIAL PORT FIRST(FOUR BYTES OF ADDR AND 'COMMAND')
@@ -29,7 +65,7 @@ GET_INPUT_BYTE:
    JMP GET_INPUT_BYTE
    
 STORE_BYTE:
-   JSR MAKE_BYTE
+   JSR MAKE_BYTE_OUTPUT
    STI R0,0X000 ; INDEXED STORE, USES R1 AND R2 FOR BASE ADDRESS
    JMP BEGIN
 
@@ -41,6 +77,7 @@ PARSE_INPUT_ADDR:
    LDC R1,0X20 ; ASCII VALUE FOR ' '
    XOR R1,R0 ; CHECKS IF LAST INPUT CHARACTER WAS ' '
    JPZ GET_INPUT_BYTE
+   JMP BEGIN ; IF WRONG CHARACTER THEN STARTS AGAIN, USER MADE A DERP :<
 
 READ_MEM:
    JSR MAKE_ADDR_LOW ; CREATES LOW BYTE OF ADDRESS FROM ASCII
@@ -82,7 +119,7 @@ MAKE_ADDR_HIGH:
    POP R3 ; HIGH NYBBLE OF HIGH BYTE OF ADDRESS
    ADD R3,R3
    ADD R3,R3
-   ADD R3,R3
+   ADD R3,R3 ; SHIFTED R3 LEFT FOUR TIMES
    ADD R3,R3 ; HIGH BYTE OF HIGH ADDRESS READY
    ADD R2,R3 ; HIGH BYTE OF HIGH ADDRESS IN R2
    RTN
@@ -97,5 +134,5 @@ LOAD_BYTE:
    LDI R0,0X00 ; INDEXED LOAD, USES R1 AND R2 FOR BASE ADDRESS
    RTN
 
-MAKE_BYTE_OUTPUT:
+MAKE_BYTE_OUT
    ; needs to seperate two nybbles, then shift the high nybble RIGHT four times, add 0x30 to each new byte (creates ASCII value)
