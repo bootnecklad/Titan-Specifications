@@ -86,11 +86,11 @@ Only JMI has indexed addressing.
 
     Opcode    I   Cond
     -------  ---  -----
-    1 0 0 1   0   0 0 0   -  JMP 0xZZZZ - Direct jump to 0xZZZZ
-    1 0 0 1   0   0 0 1   -  JPZ 0xZZZZ - Jump if zero flag set
-    1 0 0 1   0   0 1 0   -  JPS 0xZZZZ - Jump if sign flag set
-    1 0 0 1   0   0 1 1   -  JPC 0xZZZZ - Jump if carry flag set
-    1 0 0 1   1   - - -   -  JMI 0xZZ   - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZ
+    1 0 1 0   0   0 0 0   -  JMP 0xZZZZ - Direct jump to 0xZZZZ
+    1 0 1 0   0   0 0 1   -  JPZ 0xZZZZ - Jump if zero flag set
+    1 0 1 0   0   0 1 0   -  JPS 0xZZZZ - Jump if sign flag set
+    1 0 1 0   0   0 1 1   -  JPC 0xZZZZ - Jump if carry flag set
+    1 0 1 0   1   - - -   -  JMI 0xZZ   - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZ
 
 
 ### Jump Indirect ###
@@ -110,8 +110,15 @@ Where, XXXX XXXX YYYY YYYY is the address where the jump target is stored, in tw
 
 ### JSR (Jump Subroutine) ###
 
-    JSR 0xZZZZ
 
+	Opcode     Cond
+    -------   -------
+    1 1 0 0   0 0 0 0   -  JSR 0xZZZZ - Direct jump to 0xZZZZ
+	1 1 0 0   0 0 0 1   -  RTN - Returns to address that is stored in return address stack.
+
+
+	JSR 0xZZZZ
+	
 Assembled:
 
     1100 0000
