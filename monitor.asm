@@ -79,10 +79,12 @@ READ:
    AND R0,R1           ; Upper nybble removed, ie bits UNSET, lower nybble left intact
    LDC R1,0x09
    SUB R1,R0           ; Does R1 = R1 - R0, if R0 is less than 9 then sign and zero not set.
-   JPZ ADD_30          ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
+   JRS SUB_HACK        ; This is evil hackery
+   JRS ADD_30          ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
    JPS ADD_37          ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
    JMP ADD_30          ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
-   
+
+
 CREATE_ADDRESS:
    POP RE
    POP RF     ; DONT BREAK THE RETURN ADDRESS!
@@ -101,8 +103,37 @@ XOR_SWAP:
 
 
 CLEAR:
-   ; Needs to create address then write a 00 to the address
+   JSR CREATE_ADDRESS  ; Creates address from ASCII input
+   JSR XOR_SWAP        ; Because XOR swaps are cool
+   CLR R0              ; Clears R0
+   STI R0,0x00         ; Indexed store to memory, uses address in registers and no offset
+   JMP BEGIN           ; That was quick!
 
 
 BYTE:
-   ; Needs to get two bytes of input, then turn two ASCII bytes into a single DATA byte
+   LDC R1,0x02           ; Number of bytes of input to get
+   LDC R2,0x01           ; Value need for incrementing/decrementing
+   LDM R0,SERIAL_PORT_0  ; Gets byte from input
+   TST R0                ; test to see if byte contains anything (if not, nothing was fetched)
+   JPZ BYTE              ; try again
+   LDC RF,0x1B           ; ASCII value for ESC (Escape)
+   XOR RF,R0             ; Checks if input byte was an ESC
+   JPZ BEGIN             ; If the byte was an ESC, return to '>' prompt
+   SUB R1,R2             ; Decrement byte count
+   PSH R0                ; Pushes byte onto stack
+   JPZ MAKE_BYTE         ; No more bytes to fetch so lets parse them!
+   JMP BYTE              ; Get another byte
+   
+
+MAKE_BYTE:
+   POP R1
+   POP R2
+   
+SUB_HACK:
+   POP RE
+   POP RF
+   PSH RF
+   PSH RE
+   PSH RF
+   PSH RE  ; This is effectively a very hacky duplicate routine that duplicates the return address, so stack now has HIGH BYTE, LOW BYTE, HIGH BYTE, LOW BYTE, ...rest of stack
+   RTN
