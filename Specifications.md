@@ -2,7 +2,7 @@
 
 ## Opcode summary ##
 
-    0000 NOP
+    0000 SHR
     0001 ADD
     0010 SUB
     0011 AND
@@ -44,10 +44,11 @@ Assembled:
 Where, SSSS and DDDD are the register operands for source and destination registers
 
 
-### NOT Rn ###
+### NOT Rn, SHR Rn ###
 
 Assembled:
 
+    0000 DDDD
     0110 DDDD
 
 Where, DDDD is register operand for Rn.
