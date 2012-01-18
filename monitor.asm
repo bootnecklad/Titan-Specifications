@@ -75,15 +75,54 @@ READ:
    JSR XOR_SWAP        ; :>
    LDI R0,0x00         ; Loads the byte to be read, uses indexed load with NO offset, address in R1 and R2.
    PSH R0              ; Saves byte before manipulation
+
+LOW_NYBBLE:
    LDC R1,0x0F         ; Part of byte to remove
    AND R0,R1           ; Upper nybble removed, ie bits UNSET, lower nybble left intact
    LDC R1,0x09
    SUB R1,R0           ; Does R1 = R1 - R0, if R0 is less than 9 then sign and zero not set.
-   JRS SUB_HACK        ; This is evil hackery
-   JRS ADD_30          ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
-   JPS ADD_37          ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
-   JMP ADD_30          ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
+   JPZ LOW_NYBBLE_30          ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
+   JPS LOW_NYBBLE_37          ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
+   JMP LOW_NYBBLE_30          ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
 
+
+HIGH_NYBBLE:
+   LDC R1,0xF0
+   POP R0       ; Returns unaltered value
+   AND R0,R1    ; Lower nybble removed
+   SHR R0
+   SHR R0
+   SHR R0
+   SHR R0       ; Shifted right four times to move it to lower nybble
+   LDC R1,0x09
+   SUB R1,R0           ; Does R1 = R1 - R0, if R0 is less than 9 then sign and zero not set.
+   JPZ HIGH_NYBBLE_30          ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
+   JPS HIGH_NYBBLE_37          ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
+   JMP HIGH_NYBBLE_30          ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
+
+LOW_NYBBLE_30:
+   LDC R1,0x30
+   ADD R0,R1        ; Adds 0x30 to nybble to create ASCII data
+   MOV RF,R0        ; Saves byte to be outputted
+   JMP HIGH_NYBBLE
+   
+LOW_NYBBLE_37:
+   LDC R1,0x37
+   ADD R0,R1    ; Adds 0x37 to nybble to create ASCII data
+   MOV RF,R0    ; Saves byte to be outputted
+   JMP HIGH_NYBBLE
+   
+HIGH_NYBBLE_30:
+   LDC R1,0x30
+   ADD R0,R1
+   MOV RE,R0    ; Saves byte to be outputted
+   JMP OUTPUT   ; Wooo!
+   
+HIGH_NYBBLE_37:
+   LDC R1,0x37
+   ADD R0,R1
+   MOV RE,R0    ; Saves byte etc
+   JMP OUTPUT   ; WOO!
 
 CREATE_ADDRESS:
    POP RE
@@ -129,11 +168,7 @@ MAKE_BYTE:
    POP R1
    POP R2
    
-SUB_HACK:
-   POP RE
-   POP RF
-   PSH RF
-   PSH RE
-   PSH RF
-   PSH RE  ; This is effectively a very hacky duplicate routine that duplicates the return address, so stack now has HIGH BYTE, LOW BYTE, HIGH BYTE, LOW BYTE, ...rest of stack
-   RTN
+OUTPUT:
+   STM RE,SERIAL_PORT_0  ; Ouputs high nybble
+   STM RF,SERIAL_PORT_0  ; Outputs low nybble
+   JMP BEGIN
