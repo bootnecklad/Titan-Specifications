@@ -108,17 +108,17 @@ Assembled:
 
     Opcode    I     Dst
     -------   --   ------
-    1 0 1 1   0    a a a    -  LDI Rn,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
+    1 0 1 1   0    D D D    -  LDI Rn,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
 	Z Z Z Z   Z    Z Z Z
 	Z Z Z Z   Z    Z Z Z
 
-	1 1 0 0   0    a a a    -  STI Rn,0xZZZZ - Indexed store byte from memory, from address ZZZZ, offset in R1
-	z z z z   z    z z z
-	z z z z   z    z z z
+	1 1 0 0   0    S S S    -  STI Rn,0xZZZZ - Indexed store byte to memory, from address ZZZZ, offset in R1
+	Z Z Z Z   Z    Z Z Z
+	Z Z Z Z   Z    Z Z Z
 	
-    1 0 1 1   1    a a a    -  LDI Rn,[R1,R2] - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)
+    1 0 1 1   1    D D D    -  LDI Rn,[R1,R2] - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)
 	
-	1 1 0 0   1    a a a    -  STI Rn,0xZZZZ - Indexed store byte to memory, from address ZZZZ offset in R1
+	1 1 0 0   1    S S S    -  STI Rn,[R1,R2] - Indexed store byte to memory, from address in R1(high byte) and R2(low byte)
 
 
 
