@@ -1,4 +1,4 @@
-# Titan - expanded instruction set. AWESOME! #
+# Titan - expanded instruction set #
 
 ## Opcode summary ##
 
@@ -13,8 +13,8 @@
     1000 POP
     1001 MOV
     1010 JMP
-    1011 JPI
-    1100 JSR
+    1011 LDI
+    1100 STI
     1101 LDC
     1110 LDM
     1111 STM
@@ -91,42 +91,33 @@ Only JMI has indexed addressing.
     1 0 1 0   0   0 0 1   -  JPZ 0xZZZZ - Jump if zero flag set
     1 0 1 0   0   0 1 0   -  JPS 0xZZZZ - Jump if sign flag set
     1 0 1 0   0   0 1 1   -  JPC 0xZZZZ - Jump if carry flag set
+	1 0 1 0   0   1 0 0   -  JPI 0xZZZZ - Indirect jump, point to a location in memory (0xZZZZ) and jumps to the value stored in the address (Big endian)
+	1 0 1 0   0   1 0 1   -  JSR 0xZZZZ - Push return address onto stack, direct jump to 0xZZZZ
+	1 0 1 0   0   1 1 0   -  RTN        - Returns to address thats stored on stack
     1 0 1 0   1   - - -   -  JMI 0xZZ   - Where base address is in R1(high byte) and R2(low byte) offset by 0xZZ
 
+### LDI+STI (Indexed Load/Store Memory) ###
 
-### Jump Indirect ###
-
-    JPI 0xZZZZ
-
-Indirect jump, point to a location in memory (0xZZZZ) and jumps to the value stored in the address (Big endian)
-
-Assembled:
-
-    1011 0000
-    XXXX XXXX
-    YYYY YYYY
-
-Where, XXXX XXXX YYYY YYYY is the address where the jump target is stored, in two bytes.
-
-
-### JSR (Jump Subroutine) ###
-
-
-	Opcode     Cond
-    -------   -------
-    1 1 0 0   0 0 0 0   -  JSR 0xZZZZ - Direct jump to 0xZZZZ
-	1 1 0 0   0 0 0 1   -  RTN - Returns to address that is stored in return address stack.
-
-
-	JSR 0xZZZZ
+    LDI Ra,0xZZZZ[Rb]
+    LDI Ra,[Rb,Rc]
 	
+    STM Ra,0xZZZZ[Rb]
+    STI Rn,0xYY
+
 Assembled:
 
-    1100 0000
-    XXXX XXXX
-    XXXX XXXX
+    Opcode    I     Dst
+    -------   --   ------
+    1 0 1 1   0    a a a    -  LDI Ra,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
+	Z Z Z Z   Z    Z Z Z
+	Z Z Z Z   Z    Z Z Z
+	
+    1 0 1 1   1    a a a    -  LDI Ra,[R1,R2] - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)	
+	
+	1 1 0 0   0    a a a    -  STI Ra,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
+	z z z z   z    z z z
+	z z z z   z    z z z
 
-Where, XXXX XXXX is 0xZZZZ.
 
 
 ### LDC Rn,0xXX ###
@@ -142,18 +133,12 @@ Where, XXXX XXXX is 0xXX and DDDD is operand for Rn.
 ### LDM+STM (Load/Store Memory) ###
 
     LDM Rn,0xYYYY
-    LDI Rn,0xYY
 
     STM Rn,0xYYYY
-    STI Rn,0xYY
 
 Assembled:
 
-    Opcode    I   Dst
-    -------   -   -----
-    1 1 1 0   0   D D D   -  LDM Rn,0xYYYY - Load byte from memory, from address YYYY to DDD.
-    1 1 1 0   1   D D D   -  LDI Rn,0xYY   - Indexed load byte from memory,
-                                             from base address in R0(high byte) and R1(low byte), offset is 0xYY
-    1 1 1 1   0   S S S   -  STM Rn,0xZZZZ - Store byte to memory, to address ZZZZ, byte from SSS.
-    1 1 1 1   1   S S S   -  STM Rn,0xZZZZ - Indexed store byte to memory,
-                                             to base address in R0(high byte) and R1(low byte), offset is 0xYY
+    Opcode     Dst
+    -------   ------
+    1 1 1 0   D D D D   -  LDM Rn,0xYYYY - Load byte from memory, from address YYYY to DDDD
+    1 1 1 1   S S S S   -  STM Rn,0xZZZZ - Store byte to memory, to address ZZZZ, byte from SSS.
