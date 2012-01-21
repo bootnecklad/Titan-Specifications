@@ -73,7 +73,7 @@ PARSE_INPUT:
 READ:
    JSR CREATE_ADDRESS  ; Creates address from ASCII 
    JSR XOR_SWAP        ; :>
-   LDI R0,0x00         ; Loads the byte to be read, uses indexed load with NO offset, address in R1 and R2.
+   LDI R0,[R1,R2]      ; Loads the byte to be read, uses indexed load with NO offset, address in R1 and R2.
    PSH R0              ; Saves byte before manipulation
    LDC R1,0x0F         ; Part of byte to remove
    AND R0,R1           ; Upper nybble removed, ie bits UNSET, lower nybble left intact
@@ -124,10 +124,43 @@ CREATE_ADDRESS:
    
    ; Needs to convert FOUR ASCII bytes into TWO data bytes for the address. Hmmm...
    
+   POP R0       ; Low nybble of low address
+   LDC R1,0x30  ; Remove constant from ASCII value, makes table smaller.
+   SUB R0,R1    ; R0 = R0 - R1
+   CLR R1
+   CLR R2
+   LDI R3,HASH_TABLE[R0]
+   
    PSH RF
    PSH RE     ; PUTS BACK RETURN ADDRESS :)
    RTN
-   
+
+
+HASH_TABLE:
+   0x00
+   0x01
+   0x02
+   0x03
+   0x04
+   0x05
+   0x06
+   0x06
+   0x08
+   0x09
+   0x00
+   0x00
+   0x00
+   0x00
+   0x00
+   0x00 ; '0x0A'
+   0x00
+   0x0A
+   0x0B
+   0x0C
+   0x0D
+   0x0E
+   0x0F
+
 
 XOR_SWAP:
    XOR R1,R2  ; Swaps R1 and R2
