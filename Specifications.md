@@ -34,7 +34,7 @@ S: Set if ALU operation stores a 2's complement negative number (high bit set).
 
 ## Arithmetic/Logic: ADD, SUB, AND, LOR, XOR, NOT ##
 
-### Example: ADD Rd,Rs ###
+### Example: ADD Rs,Rd ###
 
 Assembled:
 
@@ -71,7 +71,7 @@ Assembled:
     1000 DDDD
 
 
-### MOV Rd,Rs ###
+### MOV Rs,Rd ###
 
 Assembled:
 
