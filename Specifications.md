@@ -94,7 +94,8 @@ Only JMI has indexed addressing.
 	1 0 1 0   0   1 0 0   -  JPI 0xZZZZ - Indirect jump, point to a location in memory (0xZZZZ) and jumps to the value stored in the address (Big endian)
 	1 0 1 0   0   1 0 1   -  JSR 0xZZZZ - Push return address onto stack, direct jump to 0xZZZZ
 	1 0 1 0   0   1 1 0   -  RTN        - Returns to address thats stored on stack
-    1 0 1 0   1   - - -   -  JMI 0xZZZZ - Where base address is 0xZZZZ and offset is in R1
+    1 0 1 0   1   0 0 0   -  JMI 0xZZZZ - Where base address is 0xZZZZ and offset is in R1
+	1 0 1 0   1   0 0 1   -  JMI [R1,R2]- Where address to jump to is in R1(high byte) and R2(low byte)
 
 ### LDI+STI (Indexed Load/Store Memory) ###
 
