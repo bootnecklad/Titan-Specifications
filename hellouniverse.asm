@@ -20,18 +20,28 @@ END:
    JMP END  ; INFINITE LOOP HAHA!
 
 
-STRING:
-   0x48 ; ASCII 'H'
-   0x45 ; ASCII 'E'
-   0x4C ; ASCII 'L'
-   0x4C ; 'L'
-   0x4F ; 'O'
-   0x20 ; ' '
-   0x55 ; 'U'
-   0x4E ; 'N'
-   0x49 ; 'I'
-   0x56 ; 'V'
-   0x45 ; 'E'
-   0x52 ; 'R'
-   0x53 ; 'S'
-   0x45 ; 'E'
+.ASCIZ STRING "HELLO WORLD"  ; Much neater than what is below!
+
+
+
+
+
+
+
+
+; STRING:
+;   0x48 ; ASCII 'H'
+;   0x45 ; ASCII 'E'
+;   0x4C ; ASCII 'L'
+;   0x4C ; 'L'
+;   0x4F ; 'O'
+;   0x20 ; ' '
+;   0x55 ; 'U'
+;   0x4E ; 'N'
+;   0x49 ; 'I'
+;   0x56 ; 'V'
+;   0x45 ; 'E'
+;   0x52 ; 'R'
+;   0x53 ; 'S'
+;   0x45 ; 'E'
+;   0x00 ; String terminator
