@@ -48,8 +48,8 @@ Where, SSSS and DDDD are the register operands for source and destination regist
 
 Assembled:
 
-    0000 DDDD
-    0110 DDDD
+    0000 DDDD - SHR Rn
+    0110 DDDD - NOT Rn
 
 Where, DDDD is register operand for Rn.
 
