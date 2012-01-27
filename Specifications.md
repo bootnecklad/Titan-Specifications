@@ -145,3 +145,35 @@ Assembled:
     -------   ------
     1 1 1 0   D D D D   -  LDM Rn,0xYYYY - Load byte from memory, from address YYYY to DDDD
     1 1 1 1   S S S S   -  STM Rn,0xZZZZ - Store byte to memory, to address ZZZZ, byte from SSS.
+
+
+	
+
+	
+	
+### ASSEMBLY CONVENTIONS ###
+
+Labels are used to write programs, you dont want to be dealing with straight addresses. It hurts. A lot!
+
+    LOOP:
+       LDI R0,STRING[R3]     ; Gets next byte from string
+       TST R0                ; Tests byte fetched from string
+       JPZ END               ; If 0x00 then end of the string!
+       ADD R2,R3             ; Next address to get string must be +1 from previous
+       STM R0,SERIAL_PORT_0  ; Outputs ASCII data to 
+       JMP LOOP              ; Time to get next character!
+
+Above example shoves a label and a couple of instructions.
+
+
+Below shows an ASCII string that will be placed in memory at FOO, FOO is a label, beginning in memory at the first character of the string
+
+    .ASCII FOO "BAR ETC"
+	.ASCIZ FOO "ZERO TERMINATED STRING, ADDS 0x00 AT END OF STRING"
+
+Below are examples for BYTE and WORD:
+
+    .BYTE <label> 0xZZ
+	.WORD <label> 0xZZZZ
+
+Titan byte is 8bits, Titan word is 16bits.
