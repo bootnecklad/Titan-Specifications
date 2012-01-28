@@ -123,27 +123,27 @@ Assembled:
 
 
 
-### LDC Rn,0xXX ###
+### LDC Rn,0xZZ ###
 
 Assembled:
 
     1101 DDDD
-    XXXX XXXX
+    ZZZZ ZZZZ
 
-Where, XXXX XXXX is 0xXX and DDDD is operand for Rn.
+Where, ZZZZ ZZZZ is 0xZZ and DDDD is operand for Rn.
 
 
 ### LDM+STM (Load/Store Memory) ###
 
-    LDM Rn,0xYYYY
+    LDM Rn,0xZZZZ
 
-    STM Rn,0xYYYY
+    STM Rn,0xZZZZ
 
 Assembled:
 
     Opcode     Dst
     -------   ------
-    1 1 1 0   D D D D   -  LDM Rn,0xYYYY - Load byte from memory, from address YYYY to DDDD
+    1 1 1 0   D D D D   -  LDM Rn,0xZZZZ - Load byte from memory, from address ZZZZ to DDDD
     1 1 1 1   S S S S   -  STM Rn,0xZZZZ - Store byte to memory, to address ZZZZ, byte from SSS.
 
 
