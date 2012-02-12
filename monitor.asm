@@ -1,6 +1,4 @@
-; This is the basic MonitorOS for Titan.
-; When assembled and the binary entered into Titan's memory, MonitorOS will show '>' prompt at the serial terminal.
-; Bytes can be loaded into memory by typing a two byte address in hex, then a space, then the byte to be dumped.
+; This is the basic MonitorOS for Titan. When assembled and the binary entered into Titan's memory, MonitorOS will show '>' prompt at the serial terminal Bytes can be loaded into memory by typing a two byte address in hex, then a space, then the byte to be dumped.
 ;
 ; The below example shows 0xFE being entered into the address 0x0F07.
 ;
@@ -29,7 +27,6 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-;
 
 BEGIN:
    LDC R0,0x0A          ; ASCII value for LF (Line feed)
@@ -200,46 +197,3 @@ HASH_TABLE_BYTE:
    0x44
    0x45
    0x46
-
-
-; Previous READ: ... what the hell was I thinking?!
-;   LDC R1,0x09
-;   SUB R0,R1           ; Does R1 = R1 - R0, if R0 is less than 9 then sign and zero not set.
-;   JPZ LOW_NYBBLE_30   ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
-;   JPS LOW_NYBBLE_37   ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
-;   JMP LOW_NYBBLE_30   ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
-;   LOW_NYBBLE_30:
-;   LDC R1,0x30
-;   ADD R1,R0          ; Adds 0x30 to nybble to create ASCII data
-;   MOV R0,RE          ; Saves byte to be outputted
-;   JMP HIGH_NYBBLE
-;   LOW_NYBBLE_37:
-;   LDC R1,0x37
-;   ADD R1,R0           ; Adds 0x37 to nybble to create ASCII data
-;   MOV R0,RF           ; Saves byte to be outputted
-;   JMP HIGH_NYBBLE
-;   LDC R1,0xF0         ; Nybble of byte to be removed
-;   POP R0              ; Returns unaltered value
-;   AND R1,R0           ; Lower nybble removed
-;   SHR R0
-;   SHR R0
-;   SHR R0
-;   SHR R0              ; Shifted right four times to move it to lower nybble
-;   LDC R1,0x09
-;   SUB R0,R1           ; Does R1 = R1 - R0, if R0 is less than 9 then sign and zero not set.
-;   JPZ HIGH_NYBBLE_30  ; Lower nybble is 9 so 0x30 must be added to create an ASCII byte
-;   JPS HIGH_NYBBLE_37  ; R0 was greater than 9 so 0x37 must be added to create an ASCII byte
-;   JMP HIGH_NYBBLE_30  ; R0 was less than 9 so nybble was less than 9, so 0x30 must be added to create an ASCII byte
-;   HIGH_NYBBLE_30:
-;   LDC R1,0x30
-;   ADD R1,R0
-;   MOV R0,RE           ; Saves byte to be outputted
-;   JMP OUTPUT          ; Wooo!
-;   HIGH_NYBBLE_37:
-;   LDC R1,0x37
-;   ADD R1,R0
-;   MOV R0,RE           ; Saves byte etc
-;   OUTPUT:
-;   STM RE,SERIAL_PORT_0  ; Ouputs high nybble
-;   STM RF,SERIAL_PORT_0  ; Outputs low nybble
-;   JMP BEGIN
