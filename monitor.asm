@@ -1,4 +1,6 @@
-; This is the basic MonitorOS for Titan. When assembled and the binary entered into Titan's memory, MonitorOS will show '>' prompt at the serial terminal Bytes can be loaded into memory by typing a two byte address in hex, then a space, then the byte to be dumped.
+; This is the basic MonitorOS for Titan.
+; When assembled and the binary entered into Titan's memory, MonitorOS will show '>' prompt at the serial terminal
+; Bytes can be loaded into memory by typing a two byte address in hex, then a space, then the byte to be dumped.
 ;
 ; The below example shows 0xFE being entered into the address 0x0F07.
 ;
