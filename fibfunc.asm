@@ -102,29 +102,29 @@ ADDFB
    JPC ERR    ; This shouldnt occur, will do if you enter in bigger value than 0x2F
    RTN        ; Returns, addition succesful!
 FBC1:
-   ADD R9,R6  ; Increments second byte for overflow
+   ADC R2,R6  ; Increments second byte for overflow
    JPC FBC2   ; Checking for another overflow
-   JMP ADDSB  ; Returns to adding 32bit number
-SBC1:
-   ADD R9,R5  ; Increments third byte for overflow
-   JPC SBC2   ; Check for overflow
    JMP ADDTB  ; Returns to adding 32bit number
+SBC1:
+   ADC R1,R5  ; Increments third byte for overflow
+   JPC SBC2   ; Check for overflow
+   JMP ADDFB  ; Returns to adding 32bit number
 TBC1:
-   ADD R9,R4  ; Increments fourth byte for overflow
+   ADC R0,R4  ; Increments fourth byte for overflow
    JPC ERR    ; If this overflowed, then youre f*cked
-   JMP ADDSB  ; Returns to adding 32bit number   
+   RTN        ; Finished
 FBC2:
-   ADD R9,R5  ; Increment, YET AGAIN!
+   ADC R1,R5  ; Increment, YET AGAIN!
    JPC FBC3   ; This is quite repepepepeative code nomsain
-   JMP ADDSB  ; Return F yeah!
+   JMP ADDFB  ; Return, F yeah!
 SBC2:
-   ADD R9,R4  ; Increment for overflow
+   ADD R0,R4  ; Increment for overflow
    JPC ERR    ; Shouldnt overflow
-   JMP ADDTB  ; Return to adding the numbers
+   RTN        ; Finished, so return
 FBC3:
-   ADD R9,R5  ; Any guesses?
+   ADC R0,R4  ; Any guesses?
    JPC ERR    ; Woops!
-   JMP ADDSB
+   RTN        ; Return, finished addition
 
 
 OUT:

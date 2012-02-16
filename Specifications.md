@@ -32,7 +32,21 @@ C: Set if ALU operation carries a 1 bit from the high order bits. (What about SU
 
 S: Set if ALU operation stores a 2's complement negative number (high bit set).
 
-## Arithmetic/Logic: ADD, SUB, AND, LOR, XOR, NOT ##
+## Arithmetic ADD, ADC ##
+
+### Examples: ADD Rs,Rd  ADC Rs,Rd ###
+
+Assembled:
+
+    0001 000X
+	SSSS DDDD
+
+Where X,
+0 - ADD
+1 - ADD with Carry in
+
+
+## Arithmetic/Logic: SUB, AND, LOR, XOR, NOT ##
 
 ### Example: ADD Rs,Rd ###
 
