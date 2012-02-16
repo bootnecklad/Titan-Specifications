@@ -171,10 +171,11 @@ Below shows an ASCII string that will be placed in memory at FOO, FOO is a label
     .ASCII FOO "BAR ETC"
 	.ASCIZ FOO "ZERO TERMINATED STRING, ADDS 0x00 AT END OF STRING"
 
-Below is syntax for BYTE and WORD:
+Below is syntax for BYTE and WORD and DATA:
 
     .BYTE <label> 0xZZ
 	.WORD <label> 0xZZZZ
+	.DATA <label> 0xZZ 0xZZ ... 0xZZ
 
 Titan byte is 8bits, Titan word is 16bits.
 
