@@ -2,19 +2,15 @@
 
 ## Opcode summary ##
 
-    0000 SHR
-    0001 ADD
-    0010 SUB
-    0011 AND
-    0100 LOR
-    0101 XOR
-    0110 NOT
+    0000 NOP
+    0001 ART*
+    0010 LGC*
     0111 PSH
     1000 POP
     1001 MOV
-    1010 JMP
-    1011 LDI
-    1100 STI
+    1010 JMP*
+    1011 LDI*
+    1100 STI*
     1101 LDC
     1110 LDM
     1111 STM
@@ -23,6 +19,8 @@
 
 Rs = SOURCE REGISTER
 Rd = DESTINATION REGISTER
+SSSS = Source register
+DDDD = Destination register
 
 ## Flags ##
 
@@ -32,40 +30,35 @@ C: Set if ALU operation carries a 1 bit from the high order bits. (What about SU
 
 S: Set if ALU operation stores a 2's complement negative number (high bit set).
 
-## Arithmetic ADD, ADC ##
+## Arithmetic ADD, ADC,SUB ##
 
-### Examples: ADD Rs,Rd  ADC Rs,Rd ###
+### Examples: ADD Rs,Rd  ADC Rs,Rd, SUB Rs,Rd ###
 
-Assembled:
-
-    0001 000X
-	SSSS DDDD
-
-Where X,
-0 - ADD
-1 - ADD with Carry in
+    Opcode   Cond
+    -------  -------
+    0 0 0 1  0 0 0 0   -  ADD Rs,Rd - Adds source and destination register
+	0 0 0 1  0 0 0 1   -  ADC Rs,Rd - Add source and destination register with carry in high
+	0 0 0 1  0 0 1 0   -  SUB Rs,Rd - Subtracts source and destination register
 
 
-## Arithmetic/Logic: SUB, AND, LOR, XOR, NOT ##
+## Logic: AND, LOR, XOR ##
 
-### Example: ADD Rs,Rd ###
+### Example: AND Rs,Rd  LOR Rs,Rd  XOR Rs,Rd ###
 
-Assembled:
+    Opcode   Cond
+    -------  -------
+    0 0 1 0  0 0 0 0   -  AND Rs,Rd - Logical AND of source and destination register
+	0 0 1 0  0 0 0 1   -  LOR Rs,Rd - Logical OR of source and destination register
+	0 0 1 0  0 0 1 0   -  XOR Rs,Rd - Logical XOR of source and destination register
 
-    0001 0000
-    SSSS DDDD
 
-Where, SSSS and DDDD are the register operands for source and destination registers
+### Example: NOT Rs  SHL Rs  SHR Rs ###
 
-
-### NOT Rn, SHR Rn ###
-
-Assembled:
-
-    0000 DDDD - SHR Rn
-    0110 DDDD - NOT Rn
-
-Where, DDDD is register operand for Rn.
+    Opcode   Cond
+    -------  -------
+    0 0 1 0  0 0 1 1   -  NOT Rs - Invert/Complement of source register
+	0 0 1 0  0 1 0 0   -  SHL Rs - Shifts all bits left towards carry of source register(HSB fed into carry)
+	0 0 1 0  0 1 0 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
 
 
 ## Stack operations ##
