@@ -1,20 +1,25 @@
 ; Titan Microcode
 ; Copyright (C) 2012 Marc Cleave, bootnecklad@gmail.com
+; Assume that all bits are low unless specified here
+; [H] - Set bit high until turned low
+; [L] - Set bit low
+; [S] - Set bit on only for that microinstruction
+; 
 
 Instruction Fetch:
-   0) Output signals for memory read
+   0) Output Signals for memory read
    1) Write INS_REG_1
 
 ADD,ADC,SUB,AND,LOR,XOR:
-   0) Increment PC
-   1) Output signals for memory read
-   2) Write INS_REG_1
-   3) INS_REG_1_HIGH -> REG_READ
-   4) Write ALU_A
-   5) INS_REG_1_LOW -> REG_READ
-   6) Write ALU_B
-   7) Output signals to ALU_DECODER, INS_REG_1_LOW -> REG_WRITE
-   8) Write REG_WRITE, Write FLAG_REG, Increment PC
+   0) INC_PC [S]
+   1) MEM_OE [H], MEM_READ [H], MEM_ENABLE [H]
+   2) CLK_INS_REG_1[S]
+   3) INS_REG_1_HIGH_REG_R[H], MEM_OE [L], MEM_READ [L], MEM_ENABLE [L]
+   4) CLK_ALU_A[S]
+   5) INS_REG_1_LOW_R[H], INS_REG_1_HIGH_REG_R[L]
+   6) CLK_ALU_A[S]
+   7) Output signals to ALU_DECODER, INS_REG_1_LOW_REG_W[H]
+   8) REG_WRITE[S], FLAG_REG[S], INC_PC[S]
 
 SHR,SHL,NOT:
    0) Increment PC
