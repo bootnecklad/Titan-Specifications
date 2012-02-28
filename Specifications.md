@@ -4,6 +4,7 @@
 
     0000 NOP
     0001 ART*
+	0010 INT
     0111 PSH
     1000 POP
     1001 REG*
@@ -45,6 +46,18 @@ S: Set if ALU operation stores a 2's complement negative number (high bit set).
     0 0 0 1  0 1 1 0   -  NOT Rs - Invert/Complement of source register
 	0 0 0 1  0 1 1 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
 
+## Interrupt operations ##
+
+### Example: INT 0x5A ###
+
+These are generally used as system calls, the interrupt vector addresses is stored in the EEPROM on the external address bus.
+
+Assembled:
+
+    0010 0000
+	ZZZZ ZZZZ
+
+Where ZZZZ ZZZZ is the interrupt to call.
 
 ## Stack operations ##
 
