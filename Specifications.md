@@ -4,10 +4,9 @@
 
     0000 NOP
     0001 ART*
-    0010 LGC*
     0111 PSH
     1000 POP
-    1001 MOV
+    1001 REG*
     1010 JMP*
     1011 LDI*
     1100 STI*
@@ -17,6 +16,7 @@
 
 ## Notation ##
 
+Rn = SINGLE SOURCE REGISTER
 Rs = SOURCE REGISTER
 Rd = DESTINATION REGISTER
 SSSS = Source register
@@ -32,33 +32,18 @@ S: Set if ALU operation stores a 2's complement negative number (high bit set).
 
 ## Arithmetic ADD, ADC,SUB ##
 
-### Examples: ADD Rs,Rd  ADC Rs,Rd, SUB Rs,Rd ###
+### Examples: ADD Rs,Rd  ADC Rs,Rd, SUB Rs,Rd, AND Rs,Rd  LOR Rs,Rd  XOR Rs,Rd, NOT Rs  SHL Rs  SHR Rs ###
 
     Opcode   Cond
     -------  -------
     0 0 0 1  0 0 0 0   -  ADD Rs,Rd - Adds source and destination register
 	0 0 0 1  0 0 0 1   -  ADC Rs,Rd - Add source and destination register with carry in high
 	0 0 0 1  0 0 1 0   -  SUB Rs,Rd - Subtracts source and destination register
-
-
-## Logic: AND, LOR, XOR ##
-
-### Example: AND Rs,Rd  LOR Rs,Rd  XOR Rs,Rd ###
-
-    Opcode   Cond
-    -------  -------
-    0 0 1 0  0 0 0 0   -  AND Rs,Rd - Logical AND of source and destination register
-	0 0 1 0  0 0 0 1   -  LOR Rs,Rd - Logical OR of source and destination register
-	0 0 1 0  0 0 1 0   -  XOR Rs,Rd - Logical XOR of source and destination register
-
-
-### Example: NOT Rs  SHL Rs  SHR Rs ###
-
-    Opcode   Cond
-    -------  -------
-    0 0 1 0  0 0 1 1   -  NOT Rs - Invert/Complement of source register
-	0 0 1 0  0 1 0 0   -  SHL Rs - Shifts all bits left towards carry of source register(HSB fed into carry)
-	0 0 1 0  0 1 0 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
+    0 0 0 1  0 0 1 1   -  AND Rs,Rd - Logical AND of source and destination register
+	0 0 0 1  0 1 0 0   -  LOR Rs,Rd - Logical OR of source and destination register
+	0 0 0 1  0 1 0 1   -  XOR Rs,Rd - Logical XOR of source and destination register
+    0 0 0 1  0 1 1 0   -  NOT Rs - Invert/Complement of source register
+	0 0 0 1  0 1 1 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
 
 
 ## Stack operations ##
@@ -78,14 +63,20 @@ Assembled:
     1000 DDDD
 
 
-### MOV Rs,Rd ###
+## Register operations ##
 
-Assembled:
 
-    1001 0000
-    SSSS DDDD
+### MOV Rs,Rd, CLR Rn, XCH Rs,Rd ###
 
-Where, SSSS and DDDD are the register operands for source and destination registers
+    Opcode   Cond
+    -------  -------
+    1 0 0 1  0 0 0 0   -  MOV Rs,Rd - Moves Rs into Rd
+	1 0 0 1  0 0 0 1   -  CLR Rn    - Clears Rn
+	1 0 0 1  0 0 1 0   -  XCH Rs,Rd - Exchanges Rs and Rd, like XOR swap but quicker
+
+Second byte of instruction is assembled into:
+
+SSSS DDDD
 
 
 ### Direct Jumps: JMP, JPZ, JPS, JPC ###
