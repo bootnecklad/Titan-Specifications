@@ -46,16 +46,17 @@ S: Set if ALU operation stores a 2's complement negative number (high bit set).
     0 0 0 1  0 1 1 0   -  NOT Rs - Invert/Complement of source register
 	0 0 0 1  0 1 1 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
 
-## Interrupt operations ##
+## Interrupt/Exception operations ##
 
 ### Example: INT 0x5A ###
 
 These are generally used as system calls, the interrupt vector addresses is stored in the EEPROM on the external address bus.
+All registers are saved in a location in system memory when an interrupt is called. The interrupt will also return with an interrupt code, and the address the interrupt was called at.
 
-Assembled:
-
-    0010 0000
-	ZZZZ ZZZZ
+    Opcode   Cond
+    -------  -------
+    0 0 1 0  0 0 0 0   -  INT 0x5A - Calls interrupt 5A
+	0 0 1 0  0 0 0 0   -  RTE - Return from exception/interrupt
 
 Where ZZZZ ZZZZ is the interrupt to call.
 
