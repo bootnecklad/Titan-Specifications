@@ -130,12 +130,12 @@ JPI:
    F) W_REG[S]
 
 JSR:
-   0) W_RE[H], R_REG[H], DB_STK_EN[H], STK_CLK[S]
+   0) R_RE[H], R_REG[H], DB_STK_EN[H], STK_CLK[S]
    1) STK_WE[S]
-   2) R_REG[L], STK_DB_EN[L]
-   3) W_RE[H], R_REG[H], DB_STK_EN[H], STK_CLK[S]
+   2) R_RF[H]
+   3) STK_CLK[S]
    4) STK_WE[S]
-   5) R_REG[L], STK_DB_EN[L]
+   5) R_REG[L], DB_STK_EN[L]
    6) INC_PC[S]
    7) MEM_OE[H], MEM_R[H], MEM_EN[H]
    8) W_IR1[S]
@@ -148,9 +148,9 @@ JSR:
    F) W_REG[S]
 
 RTN:
-   0) W_RF[H], R_REG[H], STK_DB_EN[H]
+   0) R_RF[H], R_REG[H], STK_DB_EN[H], STK_OE[H]
    1) W_REG[S]
-   2) R_REG[L], INC_PC[S], DECREMENT STACK_POINTER
+   2) R_REG[L], DECREMENT STACK_POINTER
    3) W_RF[H], STK_DB_EN[H]
    4) W_REG[S]
    5) R_REG OFF, INC_PC[S], DEC_STK[H]
@@ -158,6 +158,7 @@ RTN:
    7) DEC_STK[L]
    8) STK_CLK[S]
    9) DEC_STK[H]
+   A) STK_CLK[S], INC_PC[S], 
 
 JMI 0XZZZZ:
    0) INC_PC[S]
@@ -166,15 +167,15 @@ JMI 0XZZZZ:
    3) INC_PC[S], W_RE[H], MEM_OE[L], MEM_R[L], MEM_EN[L]
    4) MEM_OE[H], MEM_R[H], MEM_EN[H]
    5) W_ALU_B[S]
-   6) R_R00X01->R_REG
-   7) W ALU_A
-   8) ADD TO ALU_DECODER, 0XFE->W_REG
-   9) W W_REG
-   A) ENABLE NOT_MC_C_RESET, CLR ALU_B ; IF THE FLAG IS SET, H BYTE OF PC NEEDS TO BE INCREMENT
-   B) 0XFF->R_REG
-   C) W ALU_A
-   D) ADC TO ALU_DECODER, 0XFF->W_REG
-   E) W W_REG
+   6) R_R1[H], R_REG[H]
+   7) W_ALU_A[S]
+   8) ALU_DECODER[H], W_RE[H]
+   9) W_REG[S]
+   A) MC_RESET_EN[S], CLR_ALU_B[S] ; IF THE FLAG IS SET, H BYTE OF PC NEEDS TO BE INCREMENT
+   B) R_RF[H], R_REG[H]
+   C) W_ALU_A[S]
+   D) ALU_DECODER[H], W_RF[H]
+   E) W_REG[S]
 
 JMI [R1,R2]:
    0) 0X01->R_REG, 0XFF->W_REG
