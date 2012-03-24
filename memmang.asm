@@ -90,6 +90,30 @@ LOOP_END:
    RTE
 
 
+; CONS?!
+; awww yeah!
+; Pointer of car list/element is in RA(high) and RB(low)
+; Pointer of cdr list/element is in R8(high) and R9(low)
+; R8 and R9 then cleared
+INT CONS:
+   LDC R0 0x03    ; offset of the next address in list
+   ADD R0,RB   ; add offset to pointer
+   JPC CONS_INC  ; accounts for overflow
+CONS_CONT:
+   MOV R9,R2
+   MOV R8,R1   ; moves first address that points to first element into index regs
+   STM RB [R1,R2]   ; stores low byte
+   JPS INCREMENT    ; increments to point to next address
+   STM R1 [R2,R2]   ; stores high byte
+   CLR R8
+   CLR R9   ; clears pointer to the 'cdr' of the list
+
+CONS_INC:
+   CLR R0
+   ADC R0,RA ; 16 bit addition complete
+   JMP CONS_CONT
+
+
 ; Findelement
 ; Finds an empty element and stores the address in 0x3FF and 0x400
 
