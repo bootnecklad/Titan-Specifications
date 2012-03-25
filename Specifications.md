@@ -39,6 +39,14 @@ C: Set if ALU operation carries a 1 bit from the high order bits. (What about SU
 
 S: Set if ALU operation stores a number with the 2^127 bit set.
 
+## CPU CTRL ##
+
+    Opcode   Cond
+    -------  -------
+	0 0 0 0  0 0 0 0  - NOP - Performs a No Operation
+	0 0 0 0  0 0 0 1  - HLT - Stops the clock
+
+
 ## Arithmetic ##
 
 ### Examples: ADD Rs,Rd  ADC Rs,Rd, SUB Rs,Rd, AND Rs,Rd  LOR Rs,Rd  XOR Rs,Rd, NOT Rs  SHL Rs  SHR Rs ###
@@ -116,14 +124,6 @@ Only JMI has indexed addressing.
 
 ## LDI+STI (Indexed Load/Store Memory) ##
 
-    LDI Rn,0xZZZZ
-    LDI Rn
-	
-    STM Rn,0xZZZZ
-    STI Rn
-
-Assembled:
-
     Opcode    I     Dst
     -------   --   ------
     1 0 1 1   0    D D D    -  LDI Rn,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
@@ -135,12 +135,9 @@ Assembled:
 
 ## LDC Rn,0xZZ ##
 
-Assembled:
-
-    1101 DDDD
-    ZZZZ ZZZZ
-
-Where, ZZZZ ZZZZ is 0xZZ and DDDD is operand for Rn.
+    Opcode   Cond
+    -------  -------
+    1 1 0 1  D D D D   - LDC Rd,0xZZ
 
 
 ## LDM+STM (Load/Store Memory) ##
@@ -206,6 +203,7 @@ Above is the syntax for including another file containing assembly, this allows 
     Opcode   Cond     Operand           Operand
     -------  -------  -------  -------  -------  -------
 	0 0 0 0  0 0 0 0                                      NOP
+	0 0 0 0  0 0 0 1                                      HLT
 	0 0 0 1  0 0 0 0  S S S S  D D D D                    ADD Rs,Rd
 	0 0 0 1  0 0 0 1  S S S S  D D D D                    ADC Rs,Rd
 	0 0 0 1  0 0 1 0  S S S S  D D D D                    SUB Rs,Rd
@@ -219,7 +217,7 @@ Above is the syntax for including another file containing assembly, this allows 
 	0 0 1 1  0 0 0 0                                      UNUSED
 	0 1 0 0  0 0 0 0                                      UNUSED
 	0 1 0 1  0 0 0 0                                      UNUSED
-	0 1 1 0  0 0 0 0  S S S S  0 0 0 0                    CLR Rs
+	0 1 1 0  S S S S                                      CLR Rs
 	0 1 1 1  S S S S                                      PSH Rs
 	1 0 0 0  D D D D                                      POP Rd
     1 0 0 1  0 0 0 0  S S S S  D D D D                    MOV Rs,Rd
@@ -233,7 +231,8 @@ Above is the syntax for including another file containing assembly, this allows 
 	1 0 1 0  0 1 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  RTN
     1 0 1 0  1 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMI 0xZZZZ
 	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
-    1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rn,0xZZZZ
-	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rn,0xZZZZ
-    1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rn,0xZZZZ
-    1 1 1 1  S S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STM Rn,0xZZZZ
+    1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rd,0xZZZZ
+	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rs,0xZZZZ
+	1 1 0 1  D D D D  Z Z Z Z  Z Z Z Z                    LDC Rd,0xZZ
+    1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rd,0xZZZZ
+    1 1 1 1  S S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STM Rs,0xZZZZ

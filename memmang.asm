@@ -30,17 +30,19 @@ INT ALLOCATE:
 
 INT UNALLOCATE:
    CLR R0
-   STI R0 [R1,R2]    ; sets element as unallocated
+   STI R0 [RA,RB]   ; sets element as unallocated
    JPS INCREMENT
-   STI R0 [R1,R2]   ; sets high byte to zero
+   STI R0 [RA,RB]   ; sets high byte to zero
    JPS INCREMENT
-   STI R0 [R1,R2]   ; stores low byte of data
+   STI R0 [RA,RB]   ; stores low byte of data
    JPS INCREMENT
-   STI R0 [R1,R2]   ; clears high byte address next element
+   STI R0 [RA,RB]   ; clears high byte address next element
    JPS INCREMENT
-   STI R0 [R1,R2]   ; clears low byte address next element
-   STM RA 0x3FF   ; stores address of new empty element to next free element
+   STI R0 [RA,RB]   ; clears low byte address next element
+   STM RA 0x3FF     ; stores address of new empty element to next free element
    STM RB 0x400
+   CLR RA
+   CLR RB           ; clears pointer to element
    RTE
 
    
@@ -100,11 +102,9 @@ INT CONS:
    ADD R0,RB   ; add offset to pointer
    JPC CONS_INC  ; accounts for overflow
 CONS_CONT:
-   MOV R9,R2
-   MOV R8,R1   ; moves first address that points to first element into index regs
-   STM RB [R1,R2]   ; stores low byte
+   STM RB [R8,R9]   ; stores low byte
    JPS INCREMENT    ; increments to point to next address
-   STM R1 [R2,R2]   ; stores high byte
+   STM R1 [R8,R9]   ; stores high byte
    CLR R8
    CLR R9   ; clears pointer to the 'cdr' of the list
 
