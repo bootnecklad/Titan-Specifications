@@ -29,7 +29,7 @@ Z: Set if ALU operation stores a zero in the destination register.
 
 C: Set if ALU operation carries a 1 bit from the high order bits. (What about SUB?)
 
-S: Set if ALU operation stores a 2's complement negative number (high bit set).
+S: Set if ALU operation stores a number with the 2^127 bit set.
 
 ## Arithmetic ADD, ADC,SUB ##
 
@@ -56,7 +56,7 @@ All registers are saved in a location in system memory when an interrupt is call
     Opcode   Cond
     -------  -------
     0 0 1 0  0 0 0 0   -  INT 0x5A - Calls interrupt 5A
-	0 0 1 0  0 0 0 0   -  RTE - Return from exception/interrupt
+	0 0 1 0  0 0 0 1   -  RTE - Return from exception/interrupt
 
 Where ZZZZ ZZZZ is the interrupt to call.
 
@@ -85,8 +85,7 @@ Assembled:
     Opcode   Cond
     -------  -------
     1 0 0 1  0 0 0 0   -  MOV Rs,Rd - Moves Rs into Rd
-	1 0 0 1  0 0 0 1   -  CLR Rn    - Clears Rn
-	1 0 0 1  0 0 1 0   -  XCH Rs,Rd - Exchanges Rs and Rd, like XOR swap but quicker
+	1 0 0 1  0 0 0 1   -  XCH Rs,Rd - Exchanges Rs and Rd, like XOR swap but quicker
 
 Second byte of instruction is assembled into:
 
@@ -165,6 +164,14 @@ Assembled:
 	
 ### ASSEMBLY CONVENTIONS ###
 
+## Pseudo instructions ##
+
+These pseudo instructions are built into the assembler, this makes code cleaner.
+
+    SHL Rn - Simple ADD Rn,Rn - shifts all bits towards the carry bit, highest significant bit sent into carry
+	TST Rn - XOR Rn,Rn - Tests if a register is zero or not.
+
+
 Labels are used to write programs, you dont want to be dealing with straight addresses. It hurts. A lot!
 
     LOOP:
@@ -194,3 +201,42 @@ Titan byte is 8bits, Titan word is 16bits.
     .INCL "filename"
 
 Above is the syntax for including another file containing assembly, this allows routines to be called from another file.
+
+### List of ALL INSTRUCTIONS/OPCODES ###
+
+    Opcode   Cond     Operand           Operand
+    -------  -------  -------  -------  -------  -------
+	0 0 0 0  0 0 0 0                                      NOP
+	0 0 0 1  0 0 0 0  S S S S  D D D D                    ADD Rs,Rd
+	0 0 0 1  0 0 0 1  S S S S  D D D D                    ADC Rs,Rd
+	0 0 0 1  0 0 1 0  S S S S  D D D D                    SUB Rs,Rd
+    0 0 0 1  0 0 1 1  S S S S  D D D D                    AND Rs,Rd
+	0 0 0 1  0 1 0 0  S S S S  D D D D                    LOR Rs,Rd
+	0 0 0 1  0 1 0 1  S S S S  D D D D                    XOR Rs,Rd
+    0 0 0 1  0 1 1 0  S S S S  0 0 0 0                    NOT Rs
+	0 0 0 1  0 1 1 1  S S S S  0 0 0 0                    SHR Rs
+	0 0 1 0  0 0 0 0  Z Z Z Z  Z Z Z Z                    INT 0xZZ
+	0 0 1 0  0 0 0 1                                      RTE
+	0 0 1 1  0 0 0 0                                      UNUSED
+	0 1 0 0  0 0 0 0                                      UNUSED
+	0 1 0 1  0 0 0 0                                      UNUSED
+	0 1 1 0  0 0 0 0  S S S S  0 0 0 0                    CLR Rs
+	0 1 1 1  S S S S                                      PSH Rs
+	1 0 0 0  D D D D                                      POP Rd
+    1 0 0 1  0 0 0 0  S S S S  D D D D                    MOV Rs,Rd
+	1 0 0 1  0 0 0 1  S S S S  D D D D                    XCH Rs,Rd
+	1 0 1 0  0 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMP 0xZZZZ
+    1 0 1 0  0 0 0 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPZ 0xZZZZ
+    1 0 1 0  0 0 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPS 0xZZZZ
+    1 0 1 0  0 0 1 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPC 0xZZZZ
+	1 0 1 0  0 1 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPI 0xZZZZ
+	1 0 1 0  0 1 0 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JSR 0xZZZZ
+	1 0 1 0  0 1 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  RTN
+    1 0 1 0  1 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMI 0xZZZZ
+	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
+    1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rn,0xZZZZ
+	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rn,0xZZZZ
+    1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[R1,R2]
+	1 1 0 0  1 S S S  H H H H  L L L L                    STI Rn,[R1,R2]
+    1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rn,0xZZZZ
+    1 1 1 1  S S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STM Rn,0xZZZZ
