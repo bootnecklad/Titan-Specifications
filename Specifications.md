@@ -6,6 +6,7 @@
     0001 ART*
 	0010 INT
     0111 PSH
+	0110 CLR
     1000 POP
     1001 REG*
     1010 JMP*
@@ -20,8 +21,12 @@
 Rn = SINGLE SOURCE REGISTER
 Rs = SOURCE REGISTER
 Rd = DESTINATION REGISTER
+Rl = LOW BYTE SOURCE REGISTER
+Rh = HIGH BYTE SOURCE REGISTER
 SSSS = Source register
 DDDD = Destination register
+LLLL = Low byte source register
+HHHH = High byte source register
 
 ## Flags ##
 
@@ -31,7 +36,7 @@ C: Set if ALU operation carries a 1 bit from the high order bits. (What about SU
 
 S: Set if ALU operation stores a number with the 2^127 bit set.
 
-## Arithmetic ADD, ADC,SUB ##
+## Arithmetic ##
 
 ### Examples: ADD Rs,Rd  ADC Rs,Rd, SUB Rs,Rd, AND Rs,Rd  LOR Rs,Rd  XOR Rs,Rd, NOT Rs  SHL Rs  SHR Rs ###
 
@@ -84,6 +89,7 @@ Assembled:
 
     Opcode   Cond
     -------  -------
+	0 1 1 0  0 0 0 0   -  CLR Rs    - Clears Rs
     1 0 0 1  0 0 0 0   -  MOV Rs,Rd - Moves Rs into Rd
 	1 0 0 1  0 0 0 1   -  XCH Rs,Rd - Exchanges Rs and Rd, like XOR swap but quicker
 
@@ -236,7 +242,7 @@ Above is the syntax for including another file containing assembly, this allows 
 	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
     1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rn,0xZZZZ
 	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rn,0xZZZZ
-    1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[R1,R2]
-	1 1 0 0  1 S S S  H H H H  L L L L                    STI Rn,[R1,R2]
+    1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[Rh,Rl]
+	1 1 0 0  1 S S S  H H H H  L L L L                    STI Rn,[Rh,Rl]
     1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rn,0xZZZZ
     1 1 1 1  S S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STM Rn,0xZZZZ
