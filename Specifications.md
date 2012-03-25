@@ -3,15 +3,18 @@
 ## Opcode summary ##
 
     0000 NOP
-    0001 ART*
+    0001 ART
 	0010 INT
-    0111 PSH
+	0011 UNUSED
+	0100 UNUSED
+	0101 UNUSED
 	0110 CLR
+    0111 PSH
     1000 POP
-    1001 REG*
-    1010 JMP*
-    1011 LDI*
-    1100 STI*
+    1001 REG
+    1010 JMP
+    1011 LDI
+    1100 STI
     1101 LDC
     1110 LDM
     1111 STM
@@ -67,20 +70,17 @@ Where ZZZZ ZZZZ is the interrupt to call.
 
 ## Stack operations ##
 
-### PSH Rn ###
+### PSH Rs ###
 
-Assembled: 
-
-    0111 SSSS
-
-Where, SSSS is register operand for Rn.
+    Opcode   Operand
+    -------  -------
+    0 1 1 1  S S S S  - PSH Rs - Pushes Rs onto the stack
 
 ### POP Rn ###
 
-Assembled: 
-
-    1000 DDDD
-
+    Opcode   Operand
+    -------  -------
+    1 0 0 0  D D D D  - POP Rd - Pops the top of the stack into Rd
 
 ## Register operations ##
 
@@ -98,7 +98,7 @@ Second byte of instruction is assembled into:
 SSSS DDDD
 
 
-### Direct Jumps: JMP, JPZ, JPS, JPC ###
+## Direct Jumps: JMP, JPZ, JPS, JPC ##
 
 Only JMI has indexed addressing.
 
@@ -114,7 +114,7 @@ Only JMI has indexed addressing.
     1 0 1 0   1   0 0 0   -  JMI 0xZZZZ - Where base address is 0xZZZZ and offset is in R1
 	1 0 1 0   1   0 0 1   -  JMI [R1,R2]- Where address to jump to is in R1(high byte) and R2(low byte)
 
-### LDI+STI (Indexed Load/Store Memory) ###
+## LDI+STI (Indexed Load/Store Memory) ##
 
     LDI Rn,0xZZZZ
     LDI Rn
@@ -127,20 +127,13 @@ Assembled:
     Opcode    I     Dst
     -------   --   ------
     1 0 1 1   0    D D D    -  LDI Rn,0xZZZZ - Indexed load byte from memory, from address ZZZZ, offset in R1
-	Z Z Z Z   Z    Z Z Z
-	Z Z Z Z   Z    Z Z Z
-
-	1 1 0 0   0    S S S    -  STI Rn,0xZZZZ - Indexed store byte to memory, from address ZZZZ, offset in R1
-	Z Z Z Z   Z    Z Z Z
-	Z Z Z Z   Z    Z Z Z
-	
-    1 0 1 1   1    D D D    -  LDI Rn,[R1,R2] - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)
-	
+	1 1 0 0   0    S S S    -  STI Rn,0xZZZZ - Indexed store byte to memory, from address ZZZZ, offset in R1	
+    1 0 1 1   1    D D D    -  LDI Rn,[R1,R2] - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)	
 	1 1 0 0   1    S S S    -  STI Rn,[R1,R2] - Indexed store byte to memory, from address in R1(high byte) and R2(low byte)
 
 
 
-### LDC Rn,0xZZ ###
+## LDC Rn,0xZZ ##
 
 Assembled:
 
@@ -150,7 +143,7 @@ Assembled:
 Where, ZZZZ ZZZZ is 0xZZ and DDDD is operand for Rn.
 
 
-### LDM+STM (Load/Store Memory) ###
+## LDM+STM (Load/Store Memory) ##
 
     LDM Rn,0xZZZZ
 
@@ -168,9 +161,9 @@ Assembled:
 
 	
 	
-### ASSEMBLY CONVENTIONS ###
+## ASSEMBLY CONVENTIONS ##
 
-## Pseudo instructions ##
+### Pseudo instructions ###
 
 These pseudo instructions are built into the assembler, this makes code cleaner.
 
@@ -242,7 +235,5 @@ Above is the syntax for including another file containing assembly, this allows 
 	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
     1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rn,0xZZZZ
 	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rn,0xZZZZ
-    1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[Rh,Rl]
-	1 1 0 0  1 S S S  H H H H  L L L L                    STI Rn,[Rh,Rl]
     1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rn,0xZZZZ
     1 1 1 1  S S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STM Rn,0xZZZZ
