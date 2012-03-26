@@ -69,10 +69,10 @@ DECREMENT:
 ; Sets all new elements to zero
 INT SETZERO:
    CLR R0
-   LDC R1 0x09   ; address to start at(high byte)
+   LDC R1,0x09   ; address to start at(high byte)
    CLR R2        ; address to start at(low byte)
-   LDC R3 0x04   ; finish address(high byte)
-   LDC R4 0x00   ; finish address(low byte)
+   LDC R3,0x04   ; finish address(high byte)
+   LDC R4,0x00   ; finish address(low byte)
 LOOP:
    STI R0,[R1,R2]  ; clears byte in memory
    JPS DECREMENT   ; decrements the address
@@ -98,7 +98,7 @@ LOOP_END:
 ; Pointer of cdr list/element is in R8(high) and R9(low)
 ; R8 and R9 then cleared
 INT CONS:
-   LDC R0 0x03    ; offset of the next address in list
+   LDC R0,0x03    ; offset of the next address in list
    ADD R0,RB   ; add offset to pointer
    JPC CONS_INC  ; accounts for overflow
 CONS_CONT:
