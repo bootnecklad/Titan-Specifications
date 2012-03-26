@@ -135,7 +135,6 @@ public class Assembler {
             } else if (split[0].equals(".ORIG")) { // If origin
                 byte[] values = getValues(split[1]);
                 int address = (values[0] << 8) + values[1];
-                System.out.println(address);
                 System.out.println("Program starts at " + split[1] + " Address: "
                         + addressString(Integer.toHexString(address)).toUpperCase());
 
