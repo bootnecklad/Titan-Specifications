@@ -198,6 +198,13 @@ Titan byte is 8bits, Titan word is 16bits.
 
 Above is the syntax for including another file containing assembly, this allows routines to be called from another file.
 
+The '.STRT' enables the assembler to know where to tell the user entering the program to start the program from, eg:
+
+    .STRT <label>
+	.STRT 0xZZZZ
+
+The operand for this can either be a label in the program, or a defined address.
+
 ### List of ALL INSTRUCTIONS/OPCODES ###
 
     Opcode   Cond     Operand           Operand
@@ -231,7 +238,9 @@ Above is the syntax for including another file containing assembly, this allows 
 	1 0 1 0  0 1 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  RTN
     1 0 1 0  1 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMI 0xZZZZ
 	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
-    1 0 1 1  0 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rd,0xZZZZ
+	1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[Rh,Rl]
+    1 0 1 1  0 S S S  H H H H  L L L L                    STI Rn,[Rh,Rl]
+	1 1 0 0  1 D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDI Rd,0xZZZZ
 	1 1 0 0  0 S S S  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  STI Rs,0xZZZZ
 	1 1 0 1  D D D D  Z Z Z Z  Z Z Z Z                    LDC Rd,0xZZ
     1 1 1 0  D D D D  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  LDM Rd,0xZZZZ
