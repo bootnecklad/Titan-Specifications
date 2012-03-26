@@ -125,7 +125,7 @@ public class Assembler {
                     bytes.add(b);
                 }
 
-            } else if (split[0].startsWith(".") && !split[0].startsWith(".WORD")) { // If line is data but not .WORD
+            } else if (split[0].startsWith(".") && !split[0].startsWith(".WORD") && !split[0].startsWith(".ORGG")) { // If line is data but not .WORD
                 byte[] data = getDataBytes(currentLine, split);
                 for (byte b : data) { // Add data bytes to assembled bytes
                     bytes.add(b);
