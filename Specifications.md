@@ -181,7 +181,7 @@ Above example shoves a label and a couple of instructions.
 
 Below shows an ASCII string that will be placed in memory at FOO, FOO is a label, beginning in memory at the first character of the string
 
-    .ASCII FOO "BAR ETC"
+    .ASCII <label> "BAR ETC"
 	.ASCIZ FOO "ZERO TERMINATED STRING, ADDS 0x00 AT END OF STRING"
 
 Below is syntax for BYTE and WORD and DATA:
@@ -236,7 +236,7 @@ The operand for this can either be a label in the program, or a defined address.
     1 0 1 0  0 0 1 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPC 0xZZZZ
 	1 0 1 0  0 1 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPI 0xZZZZ
 	1 0 1 0  0 1 0 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JSR 0xZZZZ
-	1 0 1 0  0 1 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  RTN
+	1 0 1 0  0 1 1 0                                      RTN
     1 0 1 0  1 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMI 0xZZZZ
 	1 0 1 0  1 0 0 1  H H H H  L L L L                    JMI [Rh, Rl]
 	1 0 1 1  1 D D D  H H H H  L L L L                    LDI Rn,[Rh,Rl]
