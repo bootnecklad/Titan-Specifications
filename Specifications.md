@@ -190,6 +190,10 @@ Below is syntax for BYTE and WORD and DATA:
 	.WORD <label> 0xZZZZ
 	.DATA <label> 0xZZ 0xZZ ... 0xZZ
 
+Byte will put the defined byte into memory at that location, any referance to the label in the rest of the program will return the address which the byte is stored.
+Word defines the label as the address, this is used to map labels to addresses, ie dealing with serial ports etc. Again, any referance to the label in the rest of the program will return the address of the first byte.
+Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data.
+
 Titan byte is 8bits, Titan word is 16bits.
 
     .INCL "filename"
