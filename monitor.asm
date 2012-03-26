@@ -9,12 +9,12 @@
 ;
 ; Currently there are three "commands" '/' 'C' and ' '
 ; 
-; '/' - Read byte
-; ' ' - Write byte (followed by a byte to write)
+; 'R' - Read byte
+; 'W' - Write byte (followed by a byte to write)
 ; 'C' - Clear byte
 ;
 ; This file is the MonitorOS for Marc Cleave's Titan Processor
-; Copyright (C) 2011 Marc Cleave, bootnecklad@gmail.com
+; Copyright (C) 2012 Marc Cleave, bootnecklad@gmail.com
 ;
 ; This program is free software; you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -29,6 +29,14 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+;.ORRG BEGIN ; NOT IMPLEMENTED IN ASSEMBLER YET
+
+.WORD SERIAL_PORT_0 0xFFFF   ; still need to decide which address the serial port will be at
+
+.DATA HASH_TABLE 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x0A 0x0B 0x0C 0x0D 0x0E 0x0F 
+
+.DATA HASH_TABLE_BYTE 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x41 0x42 0x43 0x44 0x45 0x46
 
 BEGIN:
    LDC R0,0x0A          ; ASCII value for LF (Line feed)
@@ -71,19 +79,19 @@ PARSE_INPUT:
 
 READ:
    JSR CREATE_ADDRESS  ; Creates address from ASCII
-   LDI R0              ; Loads the byte to be read, uses indexed load with NO offset, address in R1 and R2.
+   LDI R0,[R1,R2]      ; Loads the byte to be read, uses indexed load with NO offset, address in R1 and R2.
    PSH R0              ; Saves byte before manipulation
    LDC R1,0x0F         ; Part of byte to remove
    AND R0,R1           ; Upper nybble removed, ie bits UNSET, lower nybble left intact
-   LDI R2,HASH_TABLE_BYTE[R1]  ; Data byte used to fetch the ASCII equvilent, ie if data is 0x5 then 0x35 is needed to be output to terminal
+   LDI R2,HASH_TABLE_BYTE  ; Data byte used to fetch the ASCII equvilent, ie if data is 0x5 then 0x35 is needed to be output to terminal
    POP R0
-   LDC R1,0xF0
-   AND R0,R1           ; Lower nybble removed, bits set to 0
    SHR R1
    SHR R1
    SHR R1
    SHR R1              ; Shift the byte right four times, moves data to lower nybble
-   LDI R3,HASH_TABLE_BYTE[R1]  ; Data -> ASCII complete
+   LDC R1,0xF0
+   AND R0,R1           ; Lower nybble removed, bits set to 0
+   LDI R3,HASH_TABLE_BYTE  ; Data -> ASCII complete
    STI R3,SERIAL_PORT_0   ; Output high ASCII byte to serial terminal
    STI R2,SERIAL_PORT_0   ; Outputs low ASCII byte
    JMP BEGIN
@@ -95,17 +103,17 @@ CREATE_ADDRESS:
    POP R1       ; Low nybble of low address
    LDC R0,0x30  ; Remove constant from ASCII value, makes table smaller.
    SUB R0,R1    ; R1 = R1 - R0
-   LDI R2,HASH_TABLE[R1]
-   POP R0       ; High nybble of low address
-   SUB R1,R0    ; Removes constant
-   LDI R3,HASH_TABLE[R1]
+   LDI R2,HASH_TABLE
+   POP R1       ; High nybble of low address
+   SUB R0,R1    ; Removes constant
+   LDI R3,HASH_TABLE
    ADD R3,R2    ; Combines high and low nybbles to create low byte of address
-   POP R0       ; Low nybble of high address
-   SUB R1,R0
-   LDI R3,HASH_TABLE[R1]
-   POP R0       ; High nybble of high address
-   SUB R1,R0
-   LDI R4,HASH_TABLE[R1]
+   POP R1       ; Low nybble of high address
+   SUB R0,R1
+   LDI R3,HASH_TABLE
+   POP R1       ; High nybble of high address
+   SUB R0,R1
+   LDI R4,HASH_TABLE
    ADD R4,R3    ; Combines high and low nybbles to create high byte of address
    MOV R3,R1    ; Puts high byte address in correct place
    PSH RB
@@ -116,7 +124,7 @@ CREATE_ADDRESS:
 CLEAR:
    JSR CREATE_ADDRESS  ; Creates address from ASCII input
    CLR R0              ; Clears R0
-   STI R0              ; Indexed store to memory, uses address in registers
+   STI R0,[R1,R2]              ; Indexed store to memory, uses address in registers
    JMP BEGIN           ; That was quick!
 
 
@@ -139,63 +147,12 @@ WRITE:
    POP R1       ; Low nybble of data
    LDC R0,0x30  ; Remove constant from ASCII value, makes table smaller.
    SUB R0,R1    ; R0 = R0 - R1
-   LDI R2,HASH_TABLE[R1] ; Value of low nybble in R2
+   LDI R2,HASH_TABLE ; Value of low nybble in R2
    POP R0       ; High nybble of data
    SUB R1,R0    ; Removes constant
-   LDI R3,HASH_TABLE[R1] ; Value of high nybble in R3
+   LDI R3,HASH_TABLE ; Value of high nybble in R3
    ADD R3,R2    ; Combines high and low nybbles to create low byte of address
    MOV R2,R0
    JSR CREATE_ADDRESS
-   STI R0       ; Uses address in R1(high byte) and R2(low byte)
+   STI R0,[R1,R2]       ; Uses address in R1(high byte) and R2(low byte)
    JMP BEGIN
-
-
-HASH_TABLE:
-   0x00
-   0x01
-   0x02
-   0x03
-   0x04
-   0x05
-   0x06
-   0x06
-   0x08
-   0x09
-   0x00
-   0x00
-   0x00
-   0x00
-   0x00
-   0x00 ; '0x0A'
-   0x00
-   0x0A
-   0x0B
-   0x0C
-   0x0D
-   0x0E
-   0x0F
-   
-HASH_TABLE_BYTE:
-   0x30
-   0x31
-   0x32
-   0x33
-   0x34
-   0x35
-   0x36
-   0x37
-   0x38
-   0x39
-   0x00
-   0x00
-   0x00
-   0x00
-   0x00
-   0x00
-   0x00
-   0x41
-   0x42
-   0x43
-   0x44
-   0x45
-   0x46
