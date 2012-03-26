@@ -125,15 +125,17 @@ public class Assembler {
                     bytes.add(b);
                 }
 
-            } else if (split[0].startsWith(".") && !split[0].startsWith(".WORD")) { // If line is data but not .WORD
+            } else if (split[0].startsWith(".") && !split[0].startsWith(".WORD")
+                        && !split[0].startsWith(".ORIG")) { // If line is data but not .WORD
                 byte[] data = getDataBytes(currentLine, split);
                 for (byte b : data) { // Add data bytes to assembled bytes
                     bytes.add(b);
                 }
 
-            } else if (split[0].equals(".ORGG")) { // If origin
+            } else if (split[0].equals(".ORIG")) { // If origin
                 byte[] values = getValues(split[1]);
-                int address = values[0] << 8 + values[1];
+                int address = (values[0] << 8) + values[1];
+                System.out.println(address);
                 System.out.println("Program starts at " + split[1] + " Address: "
                         + addressString(Integer.toHexString(address)).toUpperCase());
 
