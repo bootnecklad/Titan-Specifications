@@ -200,10 +200,10 @@ Titan byte is 8bits, Titan word is 16bits.
 
 Above is the syntax for including another file containing assembly, this allows routines to be called from another file.
 
-The '.ORGG' enables the assembler to know where to tell the user entering the program to start the program from, eg:
+The '.ORIG' enables the assembler to know where to tell the user entering the program to start the program from, eg:
 
-    .ORGG <label>
-	.ORGG 0xZZZZ
+    .ORIG <label>
+	.ORIG 0xZZZZ
 
 The operand for this can either be a label in the program, or a defined address.
 
