@@ -9,16 +9,16 @@
 ;
 
 INT ALLOCATE:
-   LDM R1 0x3FF   ; high byte of next free element
+   LDM R1,0x3FF   ; high byte of next free element
    PSH R1
-   LDM R2 0x400   ; low byte of next free element
+   LDM R2,0x400   ; low byte of next free element
    PSH R2
-   LDC R0 0x80    ; bit setting for allocated element
-   STI R0 [R1,R2]    ; sets element as allocated
+   LDC R0,0x80    ; bit setting for allocated element
+   STI R0,[R1,R2]    ; sets element as allocated
    JPS INCREMENT
-   STI RA [R1,R2]   ; stores high byte of data
+   STI RA,[R1,R2]   ; stores high byte of data
    JPS INCREMENT
-   STI RB [R1,R2]   ; stores low byte of data
+   STI RB,[R1,R2]   ; stores low byte of data
    POP RB
    POP RA
    RTE
@@ -30,17 +30,17 @@ INT ALLOCATE:
 
 INT UNALLOCATE:
    CLR R0
-   STI R0 [RA,RB]   ; sets element as unallocated
+   STI R0,[RA,RB]   ; sets element as unallocated
    JPS INCREMENT
-   STI R0 [RA,RB]   ; sets high byte to zero
+   STI R0,[RA,RB]   ; sets high byte to zero
    JPS INCREMENT
-   STI R0 [RA,RB]   ; stores low byte of data
+   STI R0,[RA,RB]   ; stores low byte of data
    JPS INCREMENT
-   STI R0 [RA,RB]   ; clears high byte address next element
+   STI R0,[RA,RB]   ; clears high byte address next element
    JPS INCREMENT
-   STI R0 [RA,RB]   ; clears low byte address next element
-   STM RA 0x3FF     ; stores address of new empty element to next free element
-   STM RB 0x400
+   STI R0,[RA,RB]   ; clears low byte address next element
+   STM RA,0x3FF     ; stores address of new empty element to next free element
+   STM RB,0x400
    CLR RA
    CLR RB           ; clears pointer to element
    RTE
@@ -74,7 +74,7 @@ INT SETZERO:
    LDC R3 0x04   ; finish address(high byte)
    LDC R4 0x00   ; finish address(low byte)
 LOOP:
-   STI R0 [R1,R2]  ; clears byte in memory
+   STI R0,[R1,R2]  ; clears byte in memory
    JPS DECREMENT   ; decrements the address
    PSH R3
    XOR R1,R3       ; compares current address to finish address
@@ -102,9 +102,9 @@ INT CONS:
    ADD R0,RB   ; add offset to pointer
    JPC CONS_INC  ; accounts for overflow
 CONS_CONT:
-   STM RB [R8,R9]   ; stores low byte
+   STM RB,[R8,R9]   ; stores low byte
    JPS INCREMENT    ; increments to point to next address
-   STM R1 [R8,R9]   ; stores high byte
+   STM R1,[R8,R9]   ; stores high byte
    CLR R8
    CLR R9   ; clears pointer to the 'cdr' of the list
 
