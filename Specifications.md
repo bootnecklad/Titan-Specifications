@@ -191,7 +191,7 @@ Below is syntax for BYTE and WORD and DATA:
 	.DATA <label> 0xZZ 0xZZ ... 0xZZ
 
 Byte will put the defined byte into memory at that location, any referance to the label in the rest of the program will return the address which the byte is stored.
-Word defines the label as the address, this is used to map labels to addresses, ie dealing with serial ports etc. Again, any referance to the label in the rest of the program will return the address of the first byte.
+Word defines the label as the address, this is used to map labels to addresses, ie dealing with serial ports etc. This time, any referance to the label in the rest of the program will return the value of the word. ie .WORD hurr 0xFE5A. Would return 0xFE5A in JMP hurr
 Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data.
 
 Titan byte is 8bits, Titan word is 16bits.
@@ -200,10 +200,10 @@ Titan byte is 8bits, Titan word is 16bits.
 
 Above is the syntax for including another file containing assembly, this allows routines to be called from another file.
 
-The '.STRT' enables the assembler to know where to tell the user entering the program to start the program from, eg:
+The '.ORGG' enables the assembler to know where to tell the user entering the program to start the program from, eg:
 
-    .STRT <label>
-	.STRT 0xZZZZ
+    .ORGG <label>
+	.ORGG 0xZZZZ
 
 The operand for this can either be a label in the program, or a defined address.
 
