@@ -44,8 +44,6 @@ S: Set if ALU operation stores a number with the 2^127 bit set.
     Opcode   Cond
     -------  -------
 	0 0 0 0  0 0 0 0  - NOP - Performs a No Operation
-	0 0 0 0  0 0 0 1  - HLT - Stops the clock
-
 
 ## Arithmetic ##
 
@@ -210,7 +208,6 @@ The operand for this can either be a label in the program, or a defined address.
     Opcode   Cond     Operand           Operand
     -------  -------  -------  -------  -------  -------
 	0 0 0 0  0 0 0 0                                      NOP
-	0 0 0 0  0 0 0 1                                      HLT
 	0 0 0 1  0 0 0 0  S S S S  D D D D                    ADD Rs,Rd
 	0 0 0 1  0 0 0 1  S S S S  D D D D                    ADC Rs,Rd
 	0 0 0 1  0 0 1 0  S S S S  D D D D                    SUB Rs,Rd
