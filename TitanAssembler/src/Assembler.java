@@ -17,13 +17,13 @@ public class Assembler {
             "JPZ", "JPS", "JPC", "JPI", "JSR", "RTN", "JMI", "LDI",
             "STI", "LDC", "LDM", "STM", "SHL", "TST"};
     public static final int[] opcodeValue = {0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-            0x20, 0x20, 0x70, 0x80, 0x90, 0x91, 0x92, 0xA0,
-            0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA8, 0xB0,
+            0x20, 0x21, 0x70, 0x80, 0x90, 0x60, 0x91, 0xA0,
+            0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA8, 0xC8,
             0xC0, 0xD0, 0xE0, 0xF0, 0x10, 0x15};
     public static final int[] insLengths = {1, 2, 2, 2, 2, 2, 2, 2, 2,
-            2, 1, 1, 1, 2, 2, 2, 3,
+            2, 1, 1, 1, 2, 1, 2, 3,
             3, 3, 3, 3, 3, 1, -1, -1,
-            -1, 2, 3, 3, 2, 2}; // -1 indicates variable length
+            -1, 2, 3, 3, 2, 2};
     public static final String[] registerNames = {"R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9",
             "RA", "RB", "RC", "RD", "RE", "RF"};
     public static final int[] registerValues = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
@@ -126,7 +126,7 @@ public class Assembler {
                 }
 
             } else if (split[0].startsWith(".") && !split[0].startsWith(".WORD")
-                        && !split[0].startsWith(".ORIG")) { // If line is data but not .WORD
+                    && !split[0].startsWith(".ORIG")) { // If line is data but not .WORD
                 byte[] data = getDataBytes(currentLine, split);
                 for (byte b : data) { // Add data bytes to assembled bytes
                     bytes.add(b);
@@ -181,7 +181,6 @@ public class Assembler {
 
             case 7: // NOT
             case 8: // SHR
-            case 14: // CLR
                 result[1] = (byte) (labels.get(split[1]) << 4);
                 break;
 
@@ -198,6 +197,10 @@ public class Assembler {
             case 13: // MOV
             case 15: // XCH
                 result[1] = getTwoRegisters(split[1]);
+                break;
+
+            case 14: // CLR
+                result[0] += getValue(split[1]);
                 break;
 
             case 16: // JMP
@@ -224,7 +227,7 @@ public class Assembler {
                 }
                 break;
 
-            case 24: // LDI
+            case 24: // LDI 
             case 25: // STI
             case 27: // LDM
             case 28: // STM
@@ -232,7 +235,7 @@ public class Assembler {
                 result[0] += getValue(split1[0]);
 
                 if (split1[1].charAt(0) == '[') {
-                    result[0] += 0x08; // Add 1 to opcode
+                    result[0] -= 0x10; // Subtract from opcode
                     String regs = split[1].substring(split[1].indexOf(',') + 2, split[1].length() - 1);
                     result[1] = getTwoRegisters(regs);
 
@@ -262,7 +265,7 @@ public class Assembler {
 
     private byte getValue(String val) {
         if (val.toUpperCase().startsWith("0X")) { // If value
-            short value = Short.valueOf(val.substring(2), 16);
+            int value = Integer.valueOf(val.substring(2), 16);
             return (byte) value;
 
         } else { // If label
@@ -273,7 +276,7 @@ public class Assembler {
 
     private byte[] getValues(String val) {
         if (val.toUpperCase().startsWith("0X")) { // If value
-            short value = Short.valueOf(val.substring(2), 16);
+            int value = Integer.valueOf(val.substring(2), 16);
             return new byte[]{((byte) ((value >> 8) & 0xff)), ((byte) (value & 0xff))};
 
         } else { // If label
