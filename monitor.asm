@@ -30,7 +30,7 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-;.ORRG BEGIN ; NOT IMPLEMENTED IN ASSEMBLER YET
+.ORIG BEGIN
 
 .WORD SERIAL_PORT_0 0xFFFF   ; still need to decide which address the serial port will be at
 
