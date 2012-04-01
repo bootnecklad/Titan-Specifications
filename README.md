@@ -13,11 +13,13 @@ See the following link for general documentation that cant be found here
 Specifications.md contains an explanation of the ISA of the processor
 
 
-## Assembler ##
+## Assembler(s) ##
 
-An Assembler was written by [fatcookies](https://github.com/fatcookies).
+There are currently two assemblers for Titan,
 
-Both the desktop and android application are available [here](https://github.com/fatcookies/Titan-Assembler)
+[qu1j0t3's](https://github.com/qu1j0t3/) assembler is really cool, it can be found [here](https://github.com/qu1j0t3/bnl_titan).
+
+An Assembler was written by [fatcookies](https://github.com/fatcookies). Both the desktop and android application are available [here](https://github.com/fatcookies/Titan-Assembler)
 
 ## Emulator ##
 
