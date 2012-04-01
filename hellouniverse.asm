@@ -4,11 +4,11 @@
 
 START:
    LDC R2,0x01  ; Needed for incrementing string byte count
-   CLR R3       ; Clears R3 for indexed loading of bytes!!111
+   CLR R1       ; Clears R3 for indexed loading of bytes!!111
 
 
 LOOP:
-   LDI R0,STRING[R3]     ; Gets next byte from string
+   LDI R0,STRING     ; Gets next byte from string
    TST R0                ; Tests byte fetched from string
    JPZ END               ; If 0x00 then end of the string!
    ADD R2,R3             ; Next address to get string must be +1 from previous
@@ -21,6 +21,7 @@ END:
 
 
 .ASCIZ STRING "HELLO WORLD"  ; Much neater than what is below!
+.WORD SERIAL_PORT_0 0xFDFF
 
 
 

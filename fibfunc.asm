@@ -18,18 +18,16 @@
 
 .WORD SERIAL_PORT_0 0xFFFD
 
-.DATA HASH_TABLE 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 
-                 0x08 0x09 0x00 0x00 0x00 0x00 0x00 0x00 
-                 0x0A 0x0B 0x0C 0x0D 0x0E 0x0F
+.DATA HASH_TABLE 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x00 0x00 0x00 0x00 0x00 0x00 0x0A 0x0B 0x0C 0x0D 0x0E 0x0F
 
-.DATA HASH_TABLE_BYTE 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37
-                      0x38 0x39 0x00 0x00 0x00 0x00 0x00 0x00
-                      0x00 0x41 0x42 0x43 0x44 0x45 0x46
+.DATA HASH_TABLE_BYTE 0x30 0x31 0x32 0x33 0x34 0x35 0x36 0x37 0x38 0x39 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x41 0x42 0x43 0x44 0x45 0x46
 
 .ASCIZ ERROR "That value of fib cannot be calculated :("
 
 .BYTE MAXFIB 0x2F  ; Fib 47 is largest value that can be stored in 32bits
 
+
+.ORIG BEGIN
 
 BEGIN:
    LDC R1,0x1B   ; ASCII 'ESC' value
@@ -52,10 +50,10 @@ ASCIITOBYTE:
    POP R1       ; Low nybble of fib value
    LDC R0,0x30  ; Remove constant from ASCII value, makes table smaller.
    SUB R0,R1    ; R1 = R1 - R0
-   LDI R2,HASH_TABLE[R1]
+   LDI R2,HASH_TABLE
    POP R1       ; High nybble of fib value
    SUB R0,R1    ; Removes constant
-   LDI R3,HASH_TABLE[R1]
+   LDI R3,HASH_TABLE
    ADD R3,R2    ; Combines high and low nybbles to create binary fib value
    MOV R2,R8    ; R8 will store counter
 
@@ -97,7 +95,7 @@ ADDSB:
 ADDTB:
    ADD R1,R5  ; Adds third byte of both numbers
    JPC TBC1   ; Check for carry bit
-ADDFB
+ADDFB:
    ADD R0,R4  ; Adds fourth byte of both numbers
    JPC ERR    ; This shouldnt occur, will do if you enter in bigger value than 0x2F
    RTN        ; Returns, addition succesful!
@@ -148,7 +146,7 @@ BYTETOASCII:
    PSH R0   ; Saves byte
    LDC R1,0x0F   ; Part of byte to remove
    AND R0,R1     ; Upper nybble removed, ie bits UNSET, lower nybble left intact
-   LDI R0,HASH_TABLE_BYTE[R1]
+   LDI R0,HASH_TABLE_BYTE
    STM R0,SERIAL_PORT_0        ; Outputs upper nybble of byte
    POP R0
    SHR R1
@@ -157,7 +155,7 @@ BYTETOASCII:
    SHR R1              ; Shift the byte right four times, moves data to lower nybble
    LDC R1,0x0F
    AND R0,R1           ; Upper nybble removed, bits set to 0
-   LDI R0,HASH_TABLE_BYTE[R1]  ; Gets lower nybble ASCII character
+   LDI R0,HASH_TABLE_BYTE  ; Gets lower nybble ASCII character
    STM R0,SERIAL_PORT_0        ; Outputs lower nybble of byte
    PSH R3
    PSH R2  ; Puts return address back on stack
@@ -165,7 +163,7 @@ BYTETOASCII:
 
 
 ERR:
-   LDI R0,ERROR[R1]     ; Loads first byte of error message
+   LDI R0,ERROR     ; Loads first byte of error message
    TST R0
    JPZ END
    ADD R9,R1            ; Increments offset

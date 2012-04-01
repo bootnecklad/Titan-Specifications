@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, TitanAssemblerActivity!</string>
+    <string name="app_name">TitanAssembler</string>
+    <string name="location">Location</string>
+    <string name="cant_read_folder">folder can\'t be read!</string>
+    <string name="nnew">New</string>
+    <string name="select">Select</string>
+    <string name="file_name">File name:</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Save</string>
+    <string name="no_data">No Data</string>
+    <color name="gray">#ffff0000</color>
+    <string name="err">Error</string>
+    <string name="openFile">Open File</string>
+    <string name="assemble">Assemble</string>
+    <string name="startaddress">Start Address</string>
+    <string name="outputwidth">Ouput Width</string>
+    <string name="nofile">No file</string>
+</resources>
