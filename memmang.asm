@@ -23,7 +23,7 @@
 ; Pointer to element is returned on the stack
 ;
 
-INT ALLOCATE:
+ALLOCATE:
    POP R9
    POP RA
    POP RB         ; puts data type and data into registers
@@ -51,7 +51,7 @@ INT ALLOCATE:
 ; New free element address also updated
 ;
 
-INT UNALLOCATE:
+UNALLOCATE:
    CLR R0
    STI R0,[RA,RB]   ; sets element as unallocated
    STM RA,0x3FF     ; stores address of new empty element to next free element
@@ -80,7 +80,7 @@ DECREMENT:
 ; Setzero:
 ; Sets all new elements to zero
 ;
-INT SETZERO:
+SETZERO:
    CLR R0
    LDC R1,0x09   ; address to start at(high byte)
    CLR R2        ; address to start at(low byte)
@@ -109,7 +109,7 @@ LOOP_END:
 ; stack contents before: (CAR, CDR): datatype, databyte(high), databyte(low), datatype, databyte(high), databyte(low)
 ; pointer to element stored on stack
 ;
-INT CONS
+CONS:
    POP R9
    POP RA
    POP RB         ; puts data type and data into registers
@@ -135,7 +135,29 @@ INT CONS
    STM R0,0x3FF
    STM R0,0x3FF
    RTE	
-   
+
+
+; car
+; pointer to element stored on stack: pointer(high), pointer(low)
+; returned on stack: datatype, databyte(high), databyte(low)
+
+CAR:
+   POP R1
+   POP R2   ; the address of the first element in the list
+   LDI R9,[R1,R2]   ; datatype of data stored in the tag of the first element
+   LDC R0,0x38      ; bit configuration to extract datatype
+   AND R0,R9        ; removes unwanted bits
+   SHR R9
+   SHR R9
+   SHR R9   ; datatype now in R9
+   JPS INCREMENT
+   LDI RA,[R1,R2]   ; high byte of data
+   JPS INCREMENT
+   LDI RB,[R1,R2]   ; low byte of data
+   PSH RB
+   PSH RA
+   PSH R9   ; returns the first element in the list with datatype
+   RTE
 
 INT FINDELEMENT:
    ; ill do it later
