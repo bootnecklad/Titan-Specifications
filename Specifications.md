@@ -1,5 +1,26 @@
 # Titan - expanded instruction set #
 
+## System Specifications ##
+
+Currently, Titan has the following specifications:
+
+    8 bit data bus
+    16 8 bit registers, mapped to them are the program counter and stack pointer
+    16 bit stack pointer(64k stack)
+    16 bit program counter
+	64k addressable memory
+    Capable of 10 8bit arithmetic functions
+    Various addressing modes(Immediate, Indirect, Index, Register)
+	Memory mapped I/O
+	
+	Planned Memory map:
+	0000-9EFF - Fixed SRAM
+	9F00-DFFF - Switchable 16k banked SRAM
+	E000-FEFF - 8k EEPROM 
+	FF00-FFFF - 256 I/O ports
+
+
+
 ## Opcode summary ##
 
     0000 NOP
@@ -59,6 +80,8 @@ S: Set if ALU operation stores a number with the 2^127 bit set.
 	0 0 0 1  0 1 0 1   -  XOR Rs,Rd - Logical XOR of source and destination register
     0 0 0 1  0 1 1 0   -  NOT Rs - Invert/Complement of source register
 	0 0 0 1  0 1 1 1   -  SHR Rs - Shifts all bits right away from carry of source register(LSB fed into carry)
+	0 0 0 1  1 0 0 0   -  INC Rs - Increments the source register
+	0 0 0 1  1 0 0 1   -  DEC Rs - Decrements the source register
 
 ## Interrupt/Exception operations ##
 
