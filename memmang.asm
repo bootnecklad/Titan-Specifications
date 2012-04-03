@@ -1,59 +1,71 @@
 ; Simple Memory Pointer Managment of 16bit data to a pointer in memory
-
+;
+; Types of data:
+; 000 - NIL
+; 001 - Data
+; 010 - Pointer
+; 011 - Function
+; 100 - 
+;
+; Tag bit information for cells:
+;
+; X Y AAA BBB
+;
+; X - Dead or alive, 0=dead, 1=alive
+; Y - No use yet!
+; AAA - Data type of first 16bit value
+; BBB - Data type of second 16bit value
 
 
 
 ; Allocate:
-; Data to be allocated is stored in RA(high) and RB(low)
-; Pointer of element is returned in RA(high) and RB(low)
+; Data and data type are stored on the stack
+; Pointer to element is returned on the stack
 ;
 
 INT ALLOCATE:
-   LDM R1,0x3FF   ; high byte of next free element
+   POP R9
+   POP RA
+   POP RB         ; puts data type and data into registers
+   LDM R1,0x03FF   ; high byte of next free element
    PSH R1
-   LDM R2,0x400   ; low byte of next free element
+   LDM R2,0x0400   ; low byte of next free element
    PSH R2
+   STI 
    LDC R0,0x80    ; bit setting for allocated element
-   STI R0,[R1,R2]    ; sets element as allocated
+   LOR R0,R9
+   STI R9,[R1,R2]    ; sets element as allocated
    JPS INCREMENT
    STI RA,[R1,R2]   ; stores high byte of data
    JPS INCREMENT
    STI RB,[R1,R2]   ; stores low byte of data
-   POP RB
-   POP RA
+   CLR R0
+   STM R0,0x3FF
+   STM R0,0x3FF
    RTE
 
 
 ; Unallocate:
-; Sets byte to unallocated, clears databyte and clears next pointer
-; Pointer of element to be cleared in RA(high) and RB(low)
+; Sets ellement to unallocated
+; Pointer of element to be cleared stored on stack
+; New free element address also updated
+;
 
 INT UNALLOCATE:
    CLR R0
    STI R0,[RA,RB]   ; sets element as unallocated
-   JPS INCREMENT
-   STI R0,[RA,RB]   ; sets high byte to zero
-   JPS INCREMENT
-   STI R0,[RA,RB]   ; stores low byte of data
-   JPS INCREMENT
-   STI R0,[RA,RB]   ; clears high byte address next element
-   JPS INCREMENT
-   STI R0,[RA,RB]   ; clears low byte address next element
    STM RA,0x3FF     ; stores address of new empty element to next free element
    STM RB,0x400
-   CLR RA
-   CLR RB           ; clears pointer to element
    RTE
 
    
 ;16bit increment routine
 INCREMENT:
-   CLR R0
-   ADC R0,R2
+   INC R2
    JPC INC_CARRY
    RET
 INC_CARRY:
-   ADC R0,R1
+   INC R1
    RET
 
 ;16bit decrement routine
@@ -67,6 +79,7 @@ DECREMENT:
 
 ; Setzero:
 ; Sets all new elements to zero
+;
 INT SETZERO:
    CLR R0
    LDC R1,0x09   ; address to start at(high byte)
@@ -92,30 +105,37 @@ LOOP_END:
    RTE
 
 
-; CONS?!
-; awww yeah!
-; Pointer of car list/element is in RA(high) and RB(low)
-; Pointer of cdr list/element is in R8(high) and R9(low)
-; R8 and R9 then cleared
-INT CONS:
-   LDC R0,0x03    ; offset of the next address in list
-   ADD R0,RB   ; add offset to pointer
-   JPC CONS_INC  ; accounts for overflow
-CONS_CONT:
-   STM RB,[R8,R9]   ; stores low byte
-   JPS INCREMENT    ; increments to point to next address
-   STM R1,[R8,R9]   ; stores high byte
-   CLR R8
-   CLR R9   ; clears pointer to the 'cdr' of the list
-
-CONS_INC:
-   CLR R0
-   ADC R0,RA ; 16 bit addition complete
-   JMP CONS_CONT
-
-
-; Findelement
-; Finds an empty element and stores the address in 0x3FF and 0x400
+; cons, cons, cons
+; stack contents before: (CAR, CDR): datatype, databyte(high), databyte(low), datatype, databyte(high), databyte(low)
+; pointer to element stored on stack
+;
+INT CONS
+   POP R9
+   POP RA
+   POP RB         ; puts data type and data into registers
+   LDM R1,0x3FF   ; high byte of next free element
+   LDM R2,0x400   ; low byte of next free element
+   SHL R9
+   SHL R9
+   SHL R9         ; shifts first data type left three times to move into correct position
+   LDC R0,0x80    ; bit setting for allocated element
+   LOR R0,R9
+   POP R0         ; second data type
+   LOR R0,R9      ; information for element to be allocated finished
+   STI R9,[R1,R2] ; stores information to element
+   JPS INCREMENT
+   STI RA,[R1,R2] ; stores first byte of first data to element
+   JPS INCREMENT
+   STI RB,[R1,R2] ; stores second byte of first data to element
+   POP RA
+   POP RB
+   STI RA,[R1,R2] ; stores first byte of second data to element
+   JPS INCREMENT
+   STI RB,[R1,R2] ; stores second byte of second data to element
+   STM R0,0x3FF
+   STM R0,0x3FF
+   RTE	
+   
 
 INT FINDELEMENT:
    ; ill do it later
