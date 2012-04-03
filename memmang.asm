@@ -18,10 +18,9 @@
 
 
 
-; Allocate:
+; Allocate
 ; Data and data type are stored on the stack
 ; Pointer to element is returned on the stack
-;
 
 ALLOCATE:
    POP R9
@@ -45,11 +44,10 @@ ALLOCATE:
    RTE
 
 
-; Unallocate:
+; Unallocate
 ; Sets ellement to unallocated
 ; Pointer of element to be cleared stored on stack
 ; New free element address also updated
-;
 
 UNALLOCATE:
    CLR R0
@@ -77,9 +75,9 @@ DECREMENT:
    NOT R2
    RET
 
-; Setzero:
+; Setzero
 ; Sets all new elements to zero
-;
+
 SETZERO:
    CLR R0
    LDC R1,0x09   ; address to start at(high byte)
@@ -108,7 +106,7 @@ LOOP_END:
 ; cons, cons, cons
 ; stack contents before: (CAR, CDR): datatype, databyte(high), databyte(low), datatype, databyte(high), databyte(low)
 ; pointer to element stored on stack
-;
+
 CONS:
    POP R9
    POP RA
@@ -138,7 +136,7 @@ CONS:
 
 
 ; car
-; pointer to element stored on stack: pointer(high), pointer(low)
+; pointer to list stored on stack: pointer(high), pointer(low)
 ; returned on stack: datatype, databyte(high), databyte(low)
 
 CAR:
@@ -158,6 +156,29 @@ CAR:
    PSH RA
    PSH R9   ; returns the first element in the list with datatype
    RTE
+
+
+; cdr
+; pointer to list stored on stack: pointer(high), pointer(low)
+; pointer to cdr of list returned on stack: pointer(high), pointer(low)
+
+CDR:
+   POP R1
+   POP R2   ; the address of the first element in the list
+   LDC R0,0x03  ; offset of pointer
+   ADD R0,R2    ; adds offset to low byte
+   JPC CDR_CARRY ; will need to increment the high byte of pointer if carry detected
+CDR_CONT:
+   LDI RA,[R1,R2]   ; high byte of pointer
+   JPS INCREMENT
+   LDI RB,[R1,R2]   ; low byte of pointer
+   PSH RB
+   PSH RA  ; returns the pointer to rest of list on stack
+   RTE
+CDR_CARRY:
+   INC R1        ; accounts for overflow
+   JMP CDR_CONT  ; returns
+
 
 INT FINDELEMENT:
    ; ill do it later
