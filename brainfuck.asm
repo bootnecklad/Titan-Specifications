@@ -96,6 +96,15 @@ GETBRAINFUCK:
 
 COMPILE:
 ; this is where some magic happens omg!
+; COMMAND  ASCII VALUE
+;    +       0x2B
+;    ,       0x2C
+;    -       0x2D
+;    .       0x2E
+;    <       0x3C
+;    >       0x3E
+;    [       0x5B
+;    ]       0x5D
    LDC R1,0x80 ; high byte of start address of commands
    CLR R2      ; low byte of start address of commands
 
@@ -192,7 +201,6 @@ OUTPUT:
 ; compare current location with temp
 ; if equal then matching ] found, jump incinstruction
 ; if not equal then matching ] not found, so goto beginning
-;
 JMPZERO:
    PSH R5
    PSH R4 ; pushes current address onto stack
@@ -200,7 +208,7 @@ JMPZERO:
    LDC R7,0x7 ; ] command
    LDI R0,[R4,R5] ; gets data currently in cell
    TST R0 ; tests if zero
-   JPZ PSH_ADDR ; if data is zero then will need to find the matching ']'
+   JPZ MATCH ; if data is zero then will need to find the matching ']'
    POP R0
    POP R0 ; removes address from stack, not needed anymore
    JMP INCINSTRUCTION ; data was non-zero so carry on executing
@@ -233,3 +241,52 @@ POP_CONT:
    XOR R4,R8 ; compares high byte
    JPZ INCINSTRUCTION
    JMP MATCH ; if addresses not equal then matching ] not found, so start loop back
+
+; jump back is the opposite of jump zero
+; it works BACKWARDS rather than forwards... :o  
+; i got lazy here and just added _B to the labels and changed the increment instruciton pointer to decrement
+JMPBACK:
+   PSH R5
+   PSH R4 ; pushes current address onto stack
+   LDC R6,0x6 ; [ command
+   LDC R7,0x7 ; ] command
+   LDI R0,[R4,R5] ; gets data currently in cell
+   TST R0 ; tests if zero
+   JPZ MATCH_B ; if data is zero then will need to find the matching '['
+   POP R0
+   POP R0 ; removes address from stack, not needed anymore
+   JMP INCINSTRUCTION ; data was non-zero so carry on executing
+MATCH_B:
+   NOT R3
+   INC R3
+   JPC MATCH_CARRY_B
+   NOT R3
+   JMP MATCH_LOOP_B
+MATCH_CARRY_B:
+   NOT R3
+   NOT R2
+   INC R2
+   NOT R2
+MATCH_LOOP_B:
+   LDM R0,[R2,R3] ; gets another command
+   MOV R6,R1
+   XOR R0,R1  ; compares command to ] command
+   JPZ PUSH_MATCH_B ; if command was ] then push current location
+   MOV R7,R1
+   XOR R0,R1 ; compares command to [ command
+   JPZ POP_MATCH_B ; if equal then pop and test location
+   JMP MATCH_B   ; command was not [ or ] so loop back, start sequence again
+PUSH_MATCH_B:
+   PSH R3 ; low byte
+   PSH R2 ; high byte, pushes current location onto stack
+   JMP MATCH_B ; start sequence again
+POP_MATCH_B:
+   POP R8 ; pops high byte
+   POP R9 ; pops low byte
+   XOR R5,R9 ; compares low byte
+   JPZ POP_CONT_B ; if low byte equal, test high byte
+   JMP MATCH_B ; if addresses not equal then matching ] not found, so start loop back
+POP_CONT_B:
+   XOR R4,R8 ; compares high byte
+   JPZ INCINSTRUCTION
+   JMP MATCH_B ; if addresses not equal then matching ] not found, so start loop back
