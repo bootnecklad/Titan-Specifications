@@ -232,8 +232,8 @@ The operand for this can either be a label in the program, or a defined address.
 	0 0 0 1  0 1 0 1  S S S S  D D D D                    XOR Rs,Rd
     0 0 0 1  0 1 1 0  S S S S  0 0 0 0                    NOT Rs
 	0 0 0 1  0 1 1 1  S S S S  0 0 0 0                    SHR Rs
-    0 0 0 1  1 0 0 0                                      INC Rs
-	0 0 0 1  1 0 0 1                                      DEC Rs
+    0 0 0 1  1 0 0 0  S S S S  0 0 0 0                    INC Rs
+	0 0 0 1  1 0 0 1  S S S S  0 0 0 0                    DEC Rs
 	0 0 1 0  0 0 0 0  Z Z Z Z  Z Z Z Z                    INT 0xZZ
 	0 0 1 0  0 0 0 1                                      RTE
 	0 0 1 1  0 0 0 0                                      UNUSED
