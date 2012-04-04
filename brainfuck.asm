@@ -28,6 +28,11 @@
 ; [      110
 ; ]      111
 ; S      0xFF
+;
+;
+; User will be presented with a 'B' prompt, B for BRAINFUCK!!!
+; User can enter in raw brainfuck, and backspace to go back characters, to start again, press ESC and to start the program press G
+;
 
 
 .WORD CELLADDR 0x0000 ; cells start at 0x0000 and finish at 0x7FFF
@@ -58,6 +63,15 @@ INC_CARRY:
    INC R1
    RET
 
+;16bit decrement routine
+DECREMENT:
+   NOT R1
+   NOT R2
+   JPS INCREMENT
+   NOT R1
+   NOT R2
+   RET
+
 TESTZERO:
    TST R2   ; tests low byte
    JPZ TST_CONT
@@ -74,25 +88,38 @@ PROMPT:
    STM R0,SERIAL_PORT_0 ; Outputs to terminal
    LDC R0,0x0D   ; ASCII value for CR (Carriage return)
    STM R0,SERIAL_PORT_0 ; Outputs to terminal
-   LDC R0,0x3E   ; ASCII value for '>'
+   LDC R0,0x42   ; ASCII value for '>'
    STM R0,SERIAL_PORT_0 ; Outputs to terminal
+   LDC R1,0x80           ; high byte of start address of commands
+   CLR R2                ; low byte of start address of commands
    JMP GETBRAINFUCK   ; jumps to get input
 
 GETBRAINFUCK:
-   LDC R1,0x80 ; high byte of start address of commands
-   CLR R2      ; low byte of start address of commands
    LDM R0,SERIAL_PORT_0  ; Gets byte from input
+   STM R0,SERIAL_PORT_0  ; Echos byte back
    TST R0                ; test to see if byte contains anything (if not, nothing was fetched)
    JPZ GETBRAINFUCK      ; try again
-   STI R0,[R1,R2]
-   JPS INCREMENT
+   LDC R3,0x08           ; ASCII value for BS (Backspace)
+   XOR R0,R3             ; compares input against backspace value
+   JPZ BACKSPACE         ; if input was backspace then character inputted needs to be removed
    LDC R3,0x1B           ; ASCII value for ESC (Escape)
    XOR R0,R3             ; Checks if input byte was an ESC
    JPZ INIT              ; If the byte was an ESC, start again
    LDC R3,0x47           ; ASCII value for 'G'
    XOR R0,R3
    JPZ COMPILE           ; if the byte was G, compile then execute
+   STI R0,[R1,R2]        ; stores input to buffer
+   JPS INCREMENT         ; increments buffer address
    JMP GETBRAINFUCK      ; get another byte
+   BACKSPACE:
+   JPS DECREMENT         ; moves buffer back one character
+   LDC R3,0x08           ; ASCII value for BS (Backspace)
+   STM R3,SERIAL_PORT_0  ; outputs backspace
+   PSH R3                ; pushes (Backspace)
+   LDC R3,0x20           ; ASCII value for Space
+   POP R3                ; pops (Backspace)
+   STM R3,SERIAL_PORT_0  ; outputs backspace again
+   JMP GETBRAINFUCK      ; starts loop again
 
 COMPILE:
 ; this is where some magic happens omg!
@@ -105,36 +132,85 @@ COMPILE:
 ;    >       0x3E
 ;    [       0x5B
 ;    ]       0x5D
+   LDI R0,[R1,R2]
+   LDC R3,0x2B ; +
+   PSH R3
+   XOR R0,R3   ; compares input to + command
+   JPZ COMPILE_OUTPUT ; will replace the as;dkfjas;kdf
+   POP R3
+   LDC R3,0x2C ; ,
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x2D ; -
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x2E ; .
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x3C ; >
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x3E ; <
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x5B ; [
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0x5D ; ]
+   PSH R3
+   XOR R0,R3
+   JPZ COMPILE_OUTPUT
+   POP R3
+   LDC R3,0xFF ; not a command so therefore STOP
+   STI R3,[R1,R2] ; stores STOP command
    LDC R1,0x80 ; high byte of start address of commands
    CLR R2      ; low byte of start address of commands
+   JMP RUN  ; starts execution
+COMPILE_OUTPUT:
+   POP R3
+   STI R3,[R1,R2] ; store command
+   JPS INCREMENT ; increment
+   JMP COMPILE ; compile next byte
 
 RUN:
-   LDM R1,[R2,R3] ; gets command to be executed
-   LDC R0,0x00 ; > command
+   LDM R0,[R2,R3] ; gets command to be executed
+   LDC R1,0x00 ; > command
    XOR R0,R1 ; compares
    JPZ INCPOINTER ; executes increment pointer command
-   LDC R0,0x01 ; < command
+   LDC R1,0x01 ; < command
    XOR R0,R1 ; compares
    JPZ DECPOINTER ; executes decrement pointer command
-   LDC R0,0x02 ; + command
-   XOR R0,R1 ; compares
+   LDC R1,0x02 ; + command
+   XOR R1,R1 ; compares
    JPZ INCCELL ; executes increment cell command
-   LDC R0,0x03 ; - command
+   LDC R1,0x03 ; - command
    XOR R0,R1 ; compares
    JPZ DECCELL ; executes decrement cell command
-   LDC R0,0x04 ; . command
-   XOR R0,R1 ; compares
+   LDC R1,0x04 ; . command
+   XOR R1,R1 ; compares
    JPZ OUTPUT ; executes output command
-   LDC R0,0x05 ; , command
-   XOR R0,R1 ; compares
+   LDC R1,0x05 ; , command
+   XOR R1,R1 ; compares
    JPZ INPUT  ; executes input command
-   LDC R0,0x06 ; [ command
+   LDC R1,0x06 ; [ command
    XOR R0,R1 ; compares
    JPZ JMPZERO ; executes [ command
-   LDC R0,0x07 ; ] command
+   LDC R1,0x07 ; ] command
    XOR R0,R1 ; compares
    JPZ JMPBACK ; executes ] command
-   JPZ INIT ; wasnt any of the above commands, therefore stop command
+   JMP INIT ; wasnt any of the above commands, therefore stop command
 
 INCINSTRUCTION:
    INC R3
