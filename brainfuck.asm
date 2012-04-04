@@ -33,7 +33,7 @@
 ; User will be presented with a 'B' prompt, B for BRAINFUCK!!!
 ; User can enter in raw brainfuck, and backspace to go back characters, to start again, press ESC and to start the program press G
 ;
-
+; LESS THAN 512 BYTES :)
 
 .WORD CELLADDR 0x0000 ; cells start at 0x0000 and finish at 0x7FFF
 .WORD STARTADDR 0x8000 ; address where commands start
