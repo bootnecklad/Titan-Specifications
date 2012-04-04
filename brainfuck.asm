@@ -184,22 +184,52 @@ OUTPUT:
    STM R0,SERIAL_PORT_0 ; outputs data to serial port
    JMP INCINSTRUCTION
 
+
+; jump zero works by:
+; get command
+; if command is [ then push the current location onto the stack, goto beginning
+; if command is ] then pop stack into temp
+; compare current location with temp
+; if equal then matching ] found, jump incinstruction
+; if not equal then matching ] not found, so goto beginning
+;
 JMPZERO:
+   PSH R5
+   PSH R4 ; pushes current address onto stack
+   LDC R6,0x6 ; [ command
+   LDC R7,0x7 ; ] command
    LDI R0,[R4,R5] ; gets data currently in cell
    TST R0 ; tests if zero
-   JPZ MATCH ; if data is zero then will need to find the matching ']'
+   JPZ PSH_ADDR ; if data is zero then will need to find the matching ']'
+   POP R0
+   POP R0 ; removes address from stack, not needed anymore
    JMP INCINSTRUCTION ; data was non-zero so carry on executing
 MATCH:
    INC R3
    JPC MATCH_CARRY
-   JMP MATCH_CONT
+   JMP MATCH_LOOP
 MATCH_CARRY:
    INC R2
-MATCH_CONT:
-   LDM R0,[R2,R3] ; gets another command
-   LDC R1,0x7
-   LDC R6,0x6
 MATCH_LOOP:
-   PSH R0 ; saves byte
-   XOR R1,R0  ; compares, 
-   
+   LDM R0,[R2,R3] ; gets another command
+   MOV R7,R1
+   XOR R0,R1  ; compares command to [ command
+   JPZ PUSH_MATCH ; if command was [ then push current location
+   MOV R6,R1
+   XOR R0,R1 ; compares command to ] command
+   JPZ POP_MATCH ; if equal then pop and test location
+   JMP MATCH   ; command was not [ or ] so loop back, start sequence again
+PUSH_MATCH:
+   PSH R3 ; low byte
+   PSH R2 ; high byte, pushes current location onto stack
+   JMP MATCH ; start sequence again
+POP_MATCH:
+   POP R8 ; pops high byte
+   POP R9 ; pops low byte
+   XOR R5,R9 ; compares low byte
+   JPZ POP_CONT ; if low byte equal, test high byte
+   JMP MATCH ; if addresses not equal then matching ] not found, so start loop back
+POP_CONT:
+   XOR R4,R8 ; compares high byte
+   JPZ INCINSTRUCTION
+   JMP MATCH ; if addresses not equal then matching ] not found, so start loop back
