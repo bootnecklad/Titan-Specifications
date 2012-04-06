@@ -23,6 +23,6 @@ There are currently two assemblers for Titan,
 
 ## Emulator ##
 
-An emulator was written by [Goost91](https://github.com/Goost91/TitanEmulator).
+Currently, there is no fully functioning emulator.
 
-You can assemble the programs found here and run them in the emulator if you like. Or write your own programs! :)
+One that has been half implemented (Written in C#) was written by [Goost91](https://github.com/Goost91/TitanEmulator).
