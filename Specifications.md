@@ -1,4 +1,4 @@
-# Titan - expanded instruction set #
+# Titan - Specifications #
 
 ## System Specifications ##
 
@@ -20,6 +20,32 @@ Currently, Titan has the following specifications:
 	FF00-FFFF - 256 I/O ports
 
 
+
+## Front Panel Specifications ##
+
+On the front panel there are eight control switches, they have the following function:
+
+| LOAD ADDR* | CONT* | EXAMINE* | DEPOSIT* |    | STEP* | SINGLE/CONT | RUN/PRGM(HALT) | RESET* |
+
+LOAD ADDR         - Loads the address currently on the address switches into the PC[1]
+CONT              - Continues to the next address, ie increments the program counter[2]
+EXAMINE           - Displays the contents of memory 
+DEPOSIT           - Writes the value on the data input switches into memory
+STEP              - Single step the clock
+SINGLE/CONTINUOUS - Switch between single or continuous mode[3]
+RUN/PRGM(HALT)    - Switch between run and program mode(halted clock)
+RESET             - Send the reset line through the whole processor + expansion board[4]
+
+* - denotes that the switches are spring loaded, so will return to a zero(switch down) when released.
+
+[1] - When the 'LOAD ADDR' switch is zero then the value of the switches is used to directly access memory. The address to be examined or deposited to does not have to be clocked into the program counter.
+[2] - This allows various functions, for example the examine switch could be set high and the CONT switch toggled, this would coninuously display values in memory in from the next address.
+[3] - Various clock speeds below the processors maximum speed can be selected from within the case using some DIP switches.
+[4] - The reset line is common throughout the processor, it is also sent to the expansion board to reset any devices that would be plugged into the expansion board.
+
+
+
+## ISA - Instruction Set Architecture ##
 
 ## Opcode summary ##
 
@@ -56,9 +82,11 @@ HHHH = High byte source register
 
 Z: Set if ALU operation stores a zero in the destination register.
 
-C: Set if ALU operation carries a 1 bit from the high order bits. (What about SUB?)
+C: Set if ALU operation carries a 1 bit from an ADD function.[1]
 
-S: Set if ALU operation stores a number with the 2^127 bit set.
+S: Set if ALU operation stores a number with the MSB set.
+
+[1] - The carry flag is *always* set in any ALU operation, for operations which don't require two arguments the B input is zero.
 
 ## CPU CTRL ##
 
