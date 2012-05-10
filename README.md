@@ -6,7 +6,8 @@ In this repo you can find sources for programs that have been written for Titan
 
 See the following link for general documentation that cant be found here
 
-    http://marc.cleave.me.uk/cpu/index.htm
+[Website](http://marc.cleave.me.uk/cpu/index.htm)
+[Specifications](https://github.com/bootnecklad/Titan-Specifications/blob/master/Specifications.md)
 
 ## Specifications.md ##
 
