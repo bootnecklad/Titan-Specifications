@@ -1,11 +1,13 @@
-; Simple Memory Pointer Managment of 16bit data to a pointer in memory
+; LISP FUNCTIONS FOR TITAN?! MADNESS!
 ;
-; Types of data:
-; 000 - NIL
-; 001 - Data
-; 010 - Pointer
-; 011 - Function
-; 100 - 
+;
+; Structure of allocated cell in memory:
+;
+; TAG BYTE
+; HIGH BYTE
+; LOW BYTE
+; HIGH BYTE
+; LOW BYTE
 ;
 ; Tag bit information for cells:
 ;
@@ -15,6 +17,13 @@
 ; Y - No use yet!
 ; AAA - Data type of first 16bit value
 ; BBB - Data type of second 16bit value
+;
+; Types of data:
+; 000 - NIL
+; 001 - Data
+; 010 - Pointer
+; 011 - Function
+; 100 - 
 
 
 
@@ -23,21 +32,21 @@
 ; Pointer to element is returned on the stack
 
 ALLOCATE:
-   POP R9
-   POP RA
-   POP RB         ; puts data type and data into registers
+   POP R5
+   POP R6
+   POP R7         ; puts data type and data into registers
    LDM R1,0x03FF   ; high byte of next free element
    PSH R1
    LDM R2,0x0400   ; low byte of next free element
    PSH R2
    STI 
    LDC R0,0x80    ; bit setting for allocated element
-   LOR R0,R9
-   STI R9,[R1,R2]    ; sets element as allocated
+   LOR R0,R5
+   STI R5,[R1,R2]    ; sets element as allocated
    JPS INCREMENT
-   STI RA,[R1,R2]   ; stores high byte of data
+   STI R6,[R1,R2]   ; stores high byte of data
    JPS INCREMENT
-   STI RB,[R1,R2]   ; stores low byte of data
+   STI R7,[R1,R2]   ; stores low byte of data
    CLR R0
    STM R0,0x3FF
    STM R0,0x3FF
@@ -50,6 +59,8 @@ ALLOCATE:
 ; New free element address also updated
 
 UNALLOCATE:
+   POP RA
+   POP RB
    CLR R0
    STI R0,[RA,RB]   ; sets element as unallocated
    STM RA,0x3FF     ; stores address of new empty element to next free element
@@ -180,5 +191,72 @@ CDR_CARRY:
    JMP CDR_CONT  ; returns
 
 
-INT FINDELEMENT:
-   ; ill do it later
+; continuously scans all cells for dead cells and sets high and low bytes of next free element(cell)
+; 
+; total of 4k address space of cells, cells are 3 bytes long, allows for 1,365 possible cells.	
+; first cells tag bit is at:
+
+.WORD FirstCellAddress 0x0401
+
+.WORD HIGH_BYTE_FREE_ELEMENT 0x03FF
+.WORD LOW_BYTE_FREE_ELEMENT 0x0400
+
+INT ScanCells:
+
+CellCheck:
+   LDM R1 ,HighByteFreeElement  ; loads high byte of address of (possible) next free element
+   LDM R2 ,LowByteFreeElement   ; loads low byte of adress of (possible) next free element
+   LDI R0 [R1 , R2]             ; loads the tag information of current (possible) next free element
+   LDC R3 ,0x80                 ; mask to AND to get the DEAD/ALIVE bit
+   AND R3,R0                    ; BLACK MAGIC!
+   TST R0                       ; tests if the DEAD/ALIVE bit is set
+   JPZ CellIsDead               ; if cell is dead, nothing needs to be done
+   JMP FindDeadCellSetup        ; if cell is alive, a dead cell needs to be found to replace the address
+CellIsDead:
+   RTN                          ; Nothing needs to happen! Return to whatever was happening
+FindDeadCellSetup:
+   LDC R4 ,0x05      ; 
+   LDC R5 ,0x55      ; total number of cells in hex
+   LDC R1 ,0x04      ; loads high byte of first cell
+   LDC R2 ,0x01      ; loads low byte of first cell
+FindDeadCell:
+   LDI R0 [R1 , R2]  ; loads the tag information of current (possible) next free element
+   LDC R3 ,0x80      ; mask to AND to get the DEAD/ALIVE bit
+   AND R3,R0         ; BLACK MAGIC!
+   TST R0            ; tests if the DEAD/ALIVE bit is set
+   JPZ DeadCellFound ; if cell is dead, need to update the next free cell address
+   JPS DecrementCellCount ; decrements the number of cells to be searched
+   JPZ ENDOFTHEWORLD ; shit, if this occurs there are no more free cells to allocate! QUAD, WE'VE RUN OUT OF CELLS, UR LISP IS DEAD!
+   JPS NextCell      ; increment the current address pointing to cells (ie advanced to next cell address)
+   JMP FindDeadCell  ; if cell is alive, a dead cell needs to be found to replace the address, ie loop back!
+DeadCellFound:
+   STM R1 ,HighByteFreeCell
+   STM R2 ,LowByteFreeCell
+   RTN ; finish ScanCells routine as next free cell has been updated
+; 16bit offset addition
+NextCell:
+   LDC R0 ,0x03  ; cells are 3 bytes long
+   ADD R0,R1     ; adds offset to point to next cell tab
+   JPC HighAddrIncrement
+   RET
+HighAddrIncrement:
+   INC R1
+   RET
+; 16bit decrement
+; dirty cheating hack - ill look into it later
+DecrementCellCount:
+   NOT R4
+   NOT R5
+   INC R5
+   JPC INC_CARRY
+   NOT R4
+   NOT R5
+   RET
+INC_CARRY:
+   INC R4
+   NOT R4
+   NOT R5
+   RET
+
+; ill do it later
+; I've done it! :)
