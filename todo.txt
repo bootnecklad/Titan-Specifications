@@ -1,0 +1,17 @@
+  Rewire part of register card
+		allow for ALU A+B inputs on register card
+
+  Get new backplane board + connectors, EEPROMs for microcode testing, any extra ICs (priority encoder)
+  Make backplane
+		Has space for 4 cards: Front Panel Driver, Diagnostics card and Interrupts+I/O with one SPARE
+
+  Make front panel driver card
+  Make control card
+  Make Diagnostic LEDs card
+  Make interrupts + I/O card
+
+  Microcode + Bring up  ; titan runs once this is complete
+		Easy once EEPROMs have been accquired
+
+  Make chassis deeper + modify psu heat sink
+		This makes space for extra cards and better air flow.
