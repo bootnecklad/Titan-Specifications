@@ -116,7 +116,7 @@ LOOP_END:
 
 ; cons, cons, cons
 ; stack contents before: (CAR, CDR): datatype, databyte(high), databyte(low), datatype, databyte(high), databyte(low)
-; pointer to element stored on stack
+; pointer to element stored on stack: datatype(pointer), addressbyte(high), addressbyte(low)
 
 CONS:
    POP R9
@@ -124,6 +124,8 @@ CONS:
    POP RB         ; puts data type and data into registers
    LDM R1,0x3FF   ; high byte of next free element
    LDM R2,0x400   ; low byte of next free element
+   MOV R1,R3      ; saves address of cell being filled
+   MOV R2,R4      ; 16 bit address, takes up two bytes
    SHL R9
    SHL R9
    SHL R9         ; shifts first data type left three times to move into correct position
@@ -142,7 +144,11 @@ CONS:
    JPS INCREMENT
    STI RB,[R1,R2] ; stores second byte of second data to element
    STM R0,0x3FF
-   STM R0,0x3FF
+   STM R0,0x401   ; removes address of the cell just allocated
+   PSH R4         ; pushes address low byte
+   PSH R3         ; pushes address high byte
+   LDC R0,0x02    ; datatype for a pointer
+   PSH R0         ; pushes datatype (pointer to cons cell created)
    RTE	
 
 
