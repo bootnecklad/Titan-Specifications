@@ -148,7 +148,6 @@ Where ZZZZ ZZZZ is the interrupt to call.
     -------  -------
 	0 1 1 0  0 0 0 0   -  CLR Rs    - Clears Rs
     1 0 0 1  0 0 0 0   -  MOV Rs,Rd - Moves Rs into Rd
-	1 0 0 1  0 0 0 1   -  XCH Rs,Rd - Exchanges Rs and Rd, like XOR swap but quicker
 
 Second byte of instruction is assembled into:
 
@@ -235,7 +234,7 @@ Below is syntax for BYTE and WORD and DATA:
 	.WORD <label> 0xZZZZ
 	.DATA <label> 0xZZ 0xZZ ... 0xZZ
 
-Byte will put the defined byte into memory at that location, any referance to the label in the rest of the program will return the address which the byte is stored.
+Byte defines the label as a byte, this is used to map labels to interrupt codez, ie .BYTE END 0x05 ... INT END would call the interrupt 0x05. This is used to make software interrupts. You have to specify which interrupt code should be allocated, be careful though. You don't want to over write a previously allocated interrupt (assembler will warn of this). You must update the interrupt vector table to properly use software interrupts.
 Word defines the label as the address, this is used to map labels to addresses, ie dealing with serial ports etc. This time, any referance to the label in the rest of the program will return the value of the word. ie .WORD hurr 0xFE5A. Would return 0xFE5A in JMP hurr
 Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data.
 
@@ -245,7 +244,8 @@ Titan byte is 8bits, Titan word is 16bits.
 
 Above is the syntax for including another file containing assembly, this allows routines to be called from another file.
 
-The operand for this can either be a label in the program, or a defined address.
+To make software interrupts you have to specify which interrupt code should be allocated, be careful though. You don't want to over write a previously allocated interrupt (assembler will warn of this). You must update the interrupt vector table to properly use software interrupts.
+
 
 ### List of ALL INSTRUCTIONS/OPCODES ###
 
@@ -271,7 +271,6 @@ The operand for this can either be a label in the program, or a defined address.
 	0 1 1 1  S S S S                                      PSH Rs
 	1 0 0 0  D D D D                                      POP Rd
     1 0 0 1  0 0 0 0  S S S S  D D D D                    MOV Rs,Rd
-	1 0 0 1  0 0 0 1  S S S S  D D D D                    XCH Rs,Rd
 	1 0 1 0  0 0 0 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JMP 0xZZZZ
     1 0 1 0  0 0 0 1  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPZ 0xZZZZ
     1 0 1 0  0 0 1 0  Z Z Z Z  Z Z Z Z  Z Z Z Z  Z Z Z Z  JPS 0xZZZZ
