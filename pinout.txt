@@ -1,3 +1,10 @@
+- This page shows the pin outs of all the cards that make up Titan.
+- All cards apart from the ALU(Which only has one) each have two 40pin connectors on them, this allows the cards to be connected to the backplane.
+- Each card has the databus lines, the VCC and GND in the *same* places.
+- Any pins with the same name means that they are to be connected, ie the /OE on the control logic card goes to the /OE on the memory card.
+- Most control lines come from the PROMs that make up the microcode
+
+
 CONTROL LOGIC CARD:
 
  1  - DB0    A0 -   2
@@ -25,24 +32,23 @@ CONTROL LOGIC CARD:
  1  - OE0 /FCLR -   2
  3  - OE1  FCLK -   4
  5  - OE2  COUT -   6
- 7  - OE3   AI0 -   8
- 9  - WE0   AI1 -  10
-11  - WE1   AI2 -  12
-13  - WE2   AI3 -  14
-15  - WE3   AI4 -  16
-17  - /ROE  AI5 -  18
-19  - /RWE  AI6 -  20
-21  - SHR   AI7 -  22
-23  - AND   BI0 -  24
-25  - LOR   BI1 -  26
-27  - XOR   BI2 -  28
-29  - NOT   BI3 -  30
-31  - ADD   BI4 -  32
-33  - CIN   BI5 -  34
-35  - SUB   BI6 -  36
-37  -       BI7 -  38
+ 7  - OE3       -   8
+ 9  - WE0       -  10
+11  - WE1       -  12
+13  - WE2       -  14
+15  - WE3       -  16
+17  - /ROE      -  18
+19  - /RWE      -  20
+21  - SHR       -  22
+23  - AND       -  24
+25  - LOR       -  26
+27  - XOR       -  28
+29  - NOT       -  30
+31  - ADD       -  32
+33  - CIN       -  34
+35  - SUB       -  36
+37  -           -  38
 39  - VCC   GND -  40
-
 
 
 MEMORY CARD:
@@ -83,12 +89,18 @@ MEMORY CARD:
 23  - PC11      -  24
 25  - PC12      -  26
 27  - PC13      -  28
-29  - PC14      -  30
-31  - PC15      -  32
+29  - PC14  LLB -  30
+31  - PC15  LHB -  32
 33  - CLR   PCE -  34
 35  - PCLK  RFE -  36
 37  -       REE -  38
 39  - VCC   GND -  40
+
+
+
+
+
+
 
 
 
@@ -143,6 +155,12 @@ STACK CARD:
 
 
 
+
+
+
+
+
+
 REGISTER CARD:
 
  1  - DB0        -   2
@@ -165,6 +183,34 @@ REGISTER CARD:
 35  - /ROE       -  36
 37  - /RWE       -  38
 39  - VCC    GND -  40
+
+
+ 1  - AI0       -   2
+ 3  - AI1       -   4
+ 5  - AI2       -   6
+ 7  - AI3       -   8
+ 9  - AI4       -  10
+11  - AI5       -  12
+13  - AI6       -  14
+15  - AI7       -  16
+17  - BI0       -  18
+19  - BI2       -  20
+21  - BI3       -  22
+23  - BI4       -  24
+25  - BI5       -  26
+27  - BI6       -  28
+29  - BI7       -  30
+31  - BWE       -  32
+33  - AWE       -  34
+35  - ACLR      -  36
+37  - BCLR      -  38
+39  - VCC   GND -  40
+
+
+
+
+
+
 
 
 
