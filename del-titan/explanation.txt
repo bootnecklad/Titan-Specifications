@@ -1,0 +1,47 @@
+LOCAL(n) = stack + n
+
+INT_TO_DEL
+
+DEL -- the name of the system -- needs to convert it into DEL (tagged ptr) FORMAT
+
+
+
+PRIM_PRINT() ?!           
+bnl, that is a SYSCALL    
+print the top of the stack
+write it to a serial port 
+
+
+
+
+GC_IF_NEEDED(n) says "i want n bytes of space, would you be able to give it to me?"
+
+
+PUSH_CLOSURE(1);
+bnl, doesn't matter, the actual thing it does is take an "address" which is the 1 there, and saves it to the heap
+at the current heap pointer                                                                                      
+and then pushes that pointer to the stack                                                                        
+
+GLOBAL(0) = PEEK();
+
+bnl, there's a special segment of memory, an array, called the global list
+
+
+
+
+
+RESET_STACK();
+SAVE_TOP saves the top of the stack to the current place we're at in the heap 
+
+
+PRIM_EQ();                                     
+checks if the two items on the stack are equal?
+
+ TOP() = REF(1);
+bnl, set the top of the stack to the value at the top of the stack's address plus 1
+bnl, take the top of the stack, which is a pointer
+visit that pointer/address whatever, move an offset of 1
+take that value you find, and set it to the top 
+
+
+
