@@ -65,7 +65,7 @@ PRIM_EQ:
 
 TOP:
    POP R1
-   PSH R0  ; sets top of stack to contents of R1
+   PSH R0  ; sets top of stack to contents of R0
 
 REF:
    POP R1 ; gets pointer to some where in heap
