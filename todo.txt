@@ -1,5 +1,5 @@
-Wire Wrap control card
-Make new backplane - Space for 4 extra cards: Front Panel Driver, Diagnostics card, Interrupts+I/O and one SPARE(future expansion)	
+Wire wrap control card
+Wire wrap backplane
 Make front panel driver card
 Microcode + Bring up  ; titan runs once this is complete
 	Easy once EEPROMs have been accquired
@@ -16,3 +16,4 @@ Got backplane connectors
 Got EPROMs + priority encoders
 Register card rewired to allow ALU A+B inputs on register card
 Soldered control card
+Assembled new backplane - Space for 4 extra cards: Front Panel Driver, Diagnostics card, Interrupts+I/O and one SPARE(future expansion)	
