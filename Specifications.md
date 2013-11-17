@@ -51,11 +51,11 @@ On the front panel there are eight control switches, they have the following fun
 
     0000 NOP
     0001 ART
-	0010 INT
-	0011 UNUSED
-	0100 UNUSED
-	0101 UNUSED
-	0110 CLR
+    0010 INT
+    0011 UNUSED
+    0100 UNUSED
+    0101 UNUSED
+    0110 CLR
     0111 PSH
     1000 POP
     1001 REG
@@ -68,23 +68,23 @@ On the front panel there are eight control switches, they have the following fun
 
 ## Notation ##
 
-Rn = SINGLE SOURCE REGISTER
-Rs = SOURCE REGISTER
-Rd = DESTINATION REGISTER
-Rl = LOW BYTE SOURCE REGISTER
-Rh = HIGH BYTE SOURCE REGISTER
-SSSS = Source register
-DDDD = Destination register
-LLLL = Low byte source register
-HHHH = High byte source register
+    Rn = SINGLE SOURCE REGISTER
+    Rs = SOURCE REGISTER
+    Rd = DESTINATION REGISTER
+    Rl = LOW BYTE SOURCE REGISTER
+    Rh = HIGH BYTE SOURCE REGISTER
+    SSSS = Source register
+    DDDD = Destination register
+    LLLL = Low byte source register
+    HHHH = High byte source register
 
 ## Flags ##
 
-Z: Set if ALU operation stores a zero in the destination register.
+    Z: Set if ALU operation stores a zero in the destination register.
 
-C: Set if ALU operation carries a 1 bit from an ADD function.[1]
+    C: Set if ALU operation carries a 1 bit from an ADD function.[1]
 
-S: Set if ALU operation stores a number with the MSB set.
+    S: Set if ALU operation stores a number with the MSB set.
 
 [1] - The carry flag is *always* set in any ALU operation, for operations which don't require two arguments the B input is zero.
 
