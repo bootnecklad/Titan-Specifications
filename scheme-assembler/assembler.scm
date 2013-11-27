@@ -56,13 +56,13 @@
 (define opcode-lengths '( (NOP 1) (ADD 2) (ADC 2) (SUB 2) (AND 2) (LOR 2) (XOR 2) (NOT 2)
                           (SHR 2) (INC 2) (DEC 2) (INT 2) (RTE 1) (CLR 1) (PSH 1) (POP 1)
                           (MOV 2) (JMP 3) (JPZ 3) (JPS 3) (JPC 3) (JPI 3) (JSR 3) (RTN 1)
-                          (JMI -1) (LDI -1) (STI -1) (LDC 2) (LDM 3) (STM 3)))
+                          (JMI #f) (LDI #f) (STI #f) (LDC 2) (LDM 3) (STM 3)))
 
 ;;; defines the machine code values for different opcodes
 (define opcodes '((NOP #x00) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (LOR #x14) (XOR #x14) (NOT #x16)
                   (SHR #x17) (INC #x18) (DEC #x19) (INT #x20) (RTE #x21) (CLR #x60) (PSH #x70) (POP #x80)
                   (MOV #x90) (JMP #xA0) (JPZ #xA1) (JPS #xA2) (JPC #xA3) (JPI #xA4) (JSR #xA5) (RTN #xA6)
-                  (LDC #xD0) (LDM #xE0) (STM #xF0) (JMI -1) (LDI -1) (STI -1) (TST -1) (SHL -1)))
+                  (LDC #xD0) (LDM #xE0) (STM #xF0) (JMI #f) (LDI #f) (STI #f) (TST #f) (SHL #f)))
 
 
 ;;; defines the machine code values for different registers
@@ -76,9 +76,9 @@
 ;;; gets the length of executable instruction (in bytes)
 (define (instr-length instr)
   (if (member (car instr) (flatten opcode-lengths))
-    (if (= -1 (cadr (member (car instr) (flatten opcode-lengths))))
-      (compute-instruction-length instr)
-      (cadr (member (car instr) (flatten opcode-lengths))))
+    (if (cadr (member (car instr) (flatten opcode-lengths)))
+      (cadr (member (car instr) (flatten opcode-lengths)))
+      (compute-instruction-length instr))
     (begin (display (car instr)) (error "INVALID TITAN INSTRUCTION"))))
 
 ;;; gets length of instr, whether that be an instructions, label or directive
@@ -164,10 +164,10 @@
 ;;; converts assembly instructions into machine code values
 (define (convert-instr instr)
   (if (member (car instr) (flatten opcodes))
-    (if (= -1 (cadr (member (car instr) (flatten opcodes))))
-      (convert-special-instr instr)
+    (if (cadr (member (car instr) (flatten opcodes)))
       (cons (cadr (member (car instr) (flatten opcodes)))
-            (cdr instr)))
+            (cdr instr))
+      (convert-special-instr instr))
     (begin (display instr) (error "INVALID TITAN INSTRUCTION"))))
 
 
