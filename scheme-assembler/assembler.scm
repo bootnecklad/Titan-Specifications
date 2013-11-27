@@ -342,25 +342,11 @@
     ((JSR) (list (car instr) (split-address (cadr instr))))
     (else instr))))
 
-(define OPERATING-SYSTEM-CONSTANTS
-'((.LABEL STRINGS)
-  (.ASCIZ WELCOME-MESSAGE "WELCOME TO TITAN OPERATING SYSTEM")
-  (.ASCIZ VERSION "TITAN-OS V1.0")
-  (.ASCIZ DATE "123")
 
-  ;;; define the addresses used by the monitor
-  (.LABEL ADDRESSES)
-    (.WORD SERIAL-PORT-0 #xFDFF)
-    (.WORD SERIAL-PORT-1 #xFE00)
-    (.WORD SERIAL-PORT-2 #xFE01)
-    (.WORD INPUT-BUFFER #x8000)
-    (.WORD RETURN-STACK-POINTER #x8400)
-    (.WORD RETURN-STACK #x8402)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;; THESE ARE EXAMPLE PROGRAMS THAT YOU CAN ASSEMBLE ;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (.LABEL COMMON-CHARS)
-    (.BYTE RETURN #xFF)
-    (.BYTE CHAR-NEWLINE #xFF)
-    (.BYTE BACKSPACE #x08)))
 
 (define prog-2
   '((.LABEL START)
@@ -783,8 +769,32 @@
     (JMP MATCH-B))) ; if addresses not equal then matching ] not found  so start loop back
 
 
+
+
+(define OPERATING-SYSTEM-CONSTANTS
+'((.LABEL STRINGS)
+  (.ASCIZ WELCOME-MESSAGE "WELCOME TO TITAN OPERATING SYSTEM")
+  (.ASCIZ VERSION "TITAN-OS V1.0")
+  (.ASCIZ DATE "123")
+
+  ;;; define the addresses used by the monitor
+  (.LABEL ADDRESSES)
+    (.WORD SERIAL-PORT-0 #xFDFF)
+    (.WORD SERIAL-PORT-1 #xFE00)
+    (.WORD SERIAL-PORT-2 #xFE01)
+    (.WORD INPUT-BUFFER #x8000)
+    (.WORD RETURN-STACK-POINTER #x8400)
+    (.WORD RETURN-STACK #x8402)
+
+  (.LABEL COMMON-CHARS)
+    (.BYTE RETURN #xFF)
+    (.BYTE CHAR-NEWLINE #xFF)
+    (.BYTE BACKSPACE #x08)))
+
+
+
 (define OPERATING-SYSTEM
-`(,@OPERATING-SYSTEM-CONSTANTS
+`(,@OPERATING-SYSTEM-CONSTANTS     ;;; Titan now has inline scheme in its assembly!!!
 
   (.LABEL PROMPT)
     ;;; output > prompt
