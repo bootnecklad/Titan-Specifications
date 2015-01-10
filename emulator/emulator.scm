@@ -95,6 +95,10 @@
 (define (pc cpu)
   (read-register cpu 'PROGRAM-COUNTER))
 
+;;; return value in memory using the program counter as the address
+(define (fetch-memory cpu)
+  (read-memory cpu (pc cpu)))
+
 ;;; returns the state of one of conditional states
 (define (condition? cpu condition)
   (case condition
@@ -126,7 +130,7 @@
 (define (make-arithmetic-instruction operator)
   (lambda (cpu)
     (increment-PROGRAM-COUNTER cpu)
-    (let* ((register (read-memory cpu (pc cpu)))
+    (let* ((register (fetch-memory cpu))
 	   (source-register (extract-upper-nibble register))
 	   (destination-register (extract-lower-nibble register)))
       (write-register! cpu
@@ -174,15 +178,15 @@
     (action cpu)))
 
 (define (set-condition-states cpu)
-  (if (< 255 (read-register cpu (extract-lower-nibble (read-memory cpu (pc cpu)))))
+  (if (< 255 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (begin
 	(condition-set! cpu 'CARRY #t)
 	(write-register! cpu
-	 (extract-lower-nibble (read-memory cpu (pc cpu)))
-	 (bitwise-and (read-register cpu (extract-lower-nibble (read-memory cpu (pc cpu)))) #b11111111))))
-  (if (sign-bit? cpu (read-register cpu (extract-lower-nibble (read-memory cpu (pc cpu)))))
+	 (extract-lower-nibble (fetch-memory cpu))
+	 (bitwise-and (read-register cpu (extract-lower-nibble (fetch-memory cpu))) #b11111111))))
+  (if (sign-bit? cpu (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (condition-set! cpu 'SIGN #t))
-  (if (zero? (read-register cpu (extract-lower-nibble (read-memory cpu (pc cpu)))))
+  (if (zero? (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t)))
   
 (define (print-registers-pretty cpu)
@@ -216,9 +220,9 @@
 (define (INSTRUCTION-add cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu
-   (extract-lower-nibble (read-memory cpu (pc cpu)))
-   (+ (read-register cpu (extract-lower-nibble (read-memory cpu (pc cpu))))
-      (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu))))))
+   (extract-lower-nibble (fetch-memory cpu))
+   (+ (read-register cpu (extract-lower-nibble (fetch-memory cpu)))
+      (read-register cpu (extract-upper-nibble (fetch-memory cpu)))))
   (set-condition-states cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
@@ -226,37 +230,37 @@
 (define (INSTRUCTION-mov cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu 
-   (extract-lower-nibble (read-memory cpu (pc cpu)))
-   (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+   (extract-lower-nibble (fetch-memory cpu))
+   (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
  (define (INSTRUCTION-jmp cpu)
    (increment-PROGRAM-COUNTER cpu)
    (write-register! cpu 'PROGRAM-COUNTER
-		   (+ (arithmetic-shift (read-memory cpu (pc cpu)) 8)
+		   (+ (arithmetic-shift (fetch-memory cpu) 8)
 		      (read-memory cpu (add1 (pc cpu)))))
    (controller cpu))
 
 (define (INSTRUCTION-not cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu
-   (extract-upper-nibble (read-memory cpu (pc cpu)))
-   (bitwise-not (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu))))))
+   (extract-upper-nibble (fetch-memory cpu))
+   (bitwise-not (read-register cpu (extract-upper-nibble (fetch-memory cpu)))))
   (set-condition-states cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
 (define (INSTRUCTION-shr cpu)
   (increment-PROGRAM-COUNTER cpu)
-  (if (LSB? (extract-upper-nibble (read-memory cpu (pc cpu))))
+  (if (LSB? cpu (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (condition-set! cpu 'CARRY #t))
   (write-register! cpu
-   (extract-upper-nibble (read-memory cpu (pc cpu)))
-   (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))) -1))
-  (if (sign-bit? (extract-upper-nibble (read-memory cpu (pc cpu))))
+   (extract-upper-nibble (fetch-memory cpu))
+   (arithmetic-shift (read-register cpu (extract-upper-nibble (fetch-memory cpu))) -1))
+  (if (sign-bit? cpu (extract-upper-nibble (fetch-memory cpu)))
       (condition-set! cpu 'SIGN #t))
-  (if (zero? (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+  (if (zero? (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t))
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
@@ -264,17 +268,17 @@
 (define (INSTRUCTION-inc cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu
-   (extract-upper-nibble (read-memory cpu (pc cpu)))
-   (add1 (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu))))))
-  (if (< 255 (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+   (extract-upper-nibble (fetch-memory cpu))
+   (add1 (read-register cpu (extract-upper-nibble (fetch-memory cpu)))))
+  (if (< 255 (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (begin
 	(condition-set! cpu 'CARRY #t)
 	(write-register! cpu
-	 (extract-upper-nibble (read-memory cpu (pc cpu)))
-	 (bitwise-and (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))) #b11111111))))
-  (if (sign-bit? (extract-upper-nibble (read-memory cpu (pc cpu))))
+	 (extract-upper-nibble (fetch-memory cpu))
+	 (bitwise-and (read-register cpu (extract-upper-nibble (fetch-memory cpu))) #b11111111))))
+  (if (sign-bit? cpu (extract-upper-nibble (fetch-memory cpu)))
       (condition-set! cpu 'SIGN #t))
-  (if (zero? (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+  (if (zero? (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t))
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
@@ -282,23 +286,23 @@
 (define (INSTRUCTION-dec cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu
-   (extract-upper-nibble (read-memory cpu (pc cpu)))
-   (- (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))) 1))
-  (if (< 255 (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+   (extract-upper-nibble (fetch-memory cpu))
+   (- (read-register cpu (extract-upper-nibble (fetch-memory cpu))) 1))
+  (if (< 255 (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (begin
 	(condition-set! cpu 'CARRY #t)
 	(write-register! cpu
-	 (extract-upper-nibble (read-memory cpu (pc cpu)))
-	 (bitwise-and (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))) #b11111111))))
-  (if (sign-bit? (extract-upper-nibble (read-memory cpu (pc cpu))))
+	 (extract-upper-nibble (fetch-memory cpu))
+	 (bitwise-and (read-register cpu (extract-upper-nibble (fetch-memory cpu))) #b11111111))))
+  (if (sign-bit? cpu (extract-upper-nibble (fetch-memory cpu)))
       (condition-set! cpu 'SIGN #t))
-  (if (zero? (read-register cpu (extract-upper-nibble (read-memory cpu (pc cpu)))))
+  (if (zero? (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t))
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
 (define (INSTRUCTION-clr cpu)
-   (write-register! cpu (extract-lower-nibble (read-memory cpu (pc cpu))) 0)
+   (write-register! cpu (extract-lower-nibble (fetch-memory cpu)) 0)
 		    (increment-PROGRAM-COUNTER cpu)
 		    (controller cpu))
 
@@ -337,3 +341,24 @@
 	       #b00000000
 	       #b00000001)
   (write-register! titan 0 1))
+
+
+(define TEST-PROGRAM
+  '((.LABEL ADDRESSES)
+       (.WORD TEST-BRANCH #xF000)
+
+    (NOP)
+    (NOP)
+    (NOP)
+    (MOV R0 R1)
+    (NOP)
+    (NOP)
+    (ADD R0 R1)
+    (NOP)
+    (JMP TEST-BRANCH)
+    (NOP)
+
+    (.LABEL TEST-BRANCH)
+      (MOV R1 R2)
+      (NOP)
+      (HLT)))
