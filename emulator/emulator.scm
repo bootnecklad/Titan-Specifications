@@ -22,6 +22,39 @@
 (define (extract-upper-nibble value)
   (arithmetic-shift (bitwise-and value #b11110000) -4))
 
+(define (extract-lower-byte value)
+  (bitwise-and value #b0000000011111111))
+
+(define (extract-upper-byte value)
+  (arithmetic-shift (bitwise-and value #b1111111100000000) -8))
+
+(define (make-pc-value cpu)
+  (bitwise-ior (arithmetic-shift (read-register cpu #xE) 8)
+	       (read-register cpu #xF)))
+
+(define (write-pc-value cpu value)
+  (write-register! cpu #xE (extract-upper-byte value))
+  (write-register! cpu #xF (extract-lower-byte value)))
+
+(define (make-sp-value cpu)
+  (bitwise-ior (arithmetic-shift (read-register cpu #xC) 8)
+	       (read-register cpu #xD)))
+
+(define (write-sp-value cpu value)
+  (write-register! cpu #xC (extract-upper-byte value))
+  (write-register! cpu #xD (extract-lower-byte value)))
+
+
+(define (write-register-long! cpu register value)
+  (case register
+    ((PROGRAM-COUNTER) (write-pc-value cpu value))
+    ((STACK-POINTER) (write-sp-value cpu value))))
+
+(define (make-register-long cpu register)
+  (case register
+    ((PROGRAM-COUNTER) (make-pc-value cpu))
+    ((STACK-POINTER) (make-sp-value cpu))))
+
 (define (sign-bit? cpu register)
   (bit-set? (read-register cpu register) 7))
 
@@ -56,7 +89,7 @@
 (define (new-cpu)
   (make-cpu (make-vector (expt 2 address-bus-size) 0)
 	    (make-vector (expt 2 stack-pointer-size) 0)
-	    (make-vector 17 0)
+	    (make-vector 16 0)
 	    (make-vector 3 #f)))
 
 ;;; reads particular address in memory
@@ -80,16 +113,31 @@
 
 
 ;;; REGISTER-ONE REGISTER-TWO ... REGISTER-F ... PROGRAM-COUNTER
-(define (read-register cpu register)
+(define (read-register-hue cpu register)
   (if (eq? 'PROGRAM-COUNTER register)
-      (vector-ref (cpu-registers cpu) #x10)
+      (make-pc-value cpu)
+      (vector-ref (cpu-registers cpu) register)))
+
+(define (read-register cpu register)
+  (if (symbol? register)
+      (make-register-long cpu register)
       (vector-ref (cpu-registers cpu) register)))
 
 ;;; writes value to register
-(define (write-register! cpu register value)
-    (if (eq? 'PROGRAM-COUNTER register)
-	(vector-set! (cpu-registers cpu) #x10 value)
+(define (write-register-hue! cpu register value)
+  (if (eq? 'PROGRAM-COUNTER register)
+      (write-pc-value cpu value)
+      (vector-set! (cpu-registers cpu) register value)))
+
+(define (write-regiter! cpu register value)
+  (if (symbol? register)
+	(make-register-long cpu register)
 	(vector-set! (cpu-registers cpu) register value)))
+	
+
+;;; pushes register onto stack
+;(define (push-register cpu register)
+;  (vector-set! (cpu-stack cpu) (
 
 ;;; returns value of program counter
 (define (pc cpu)
@@ -190,15 +238,14 @@
       (condition-set! cpu 'ZERO #t)))
   
 (define (print-registers-pretty cpu)
-  (print-registers-pretty-func (vector->list (cpu-registers cpu)) 0))
+  (print-registers-pretty-func cpu (vector->list (cpu-registers cpu)) 0))
 
-(define (print-registers-pretty-func lst n)
+(define (print-registers-pretty-func cpu lst n)
   (if (null? lst)
-      (display "")
-      (begin (if (= 1 (length lst))
-		 (print "REGISTER-PROGRAM-COUNTER: " (dec->hex (car lst)))
-		 (print "REGISTER-" (dec->hex n) ": " (dec->hex (car lst))))
-	     (print-registers-pretty-func (cdr lst) (add1 n)))))
+      (begin (print "STACK-POINTER: " (dec->hex (make-sp-value cpu)))
+	     (print "PROGRAM-COUNTER: " (dec->hex (make-pc-value cpu))))
+      (begin (print "REGISTER-" (dec->hex n) ": " (dec->hex (car lst)))
+	     (print-registers-pretty-func cpu (cdr lst) (add1 n)))))
 
 
 (define (increment-PROGRAM-COUNTER cpu)
