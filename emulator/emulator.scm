@@ -112,32 +112,36 @@
     (write-bytes starting-address bytes)))
 
 
-;;; REGISTER-ONE REGISTER-TWO ... REGISTER-F ... PROGRAM-COUNTER
-(define (read-register-hue cpu register)
-  (if (eq? 'PROGRAM-COUNTER register)
-      (make-pc-value cpu)
-      (vector-ref (cpu-registers cpu) register)))
-
+;;; REGISTER-ONE REGISTER-TWO ... REGISTER-A REGISTER-B ... REGISTER-F
 (define (read-register cpu register)
   (if (symbol? register)
       (make-register-long cpu register)
       (vector-ref (cpu-registers cpu) register)))
 
 ;;; writes value to register
-(define (write-register-hue! cpu register value)
-  (if (eq? 'PROGRAM-COUNTER register)
-      (write-pc-value cpu value)
-      (vector-set! (cpu-registers cpu) register value)))
-
-(define (write-regiter! cpu register value)
+(define (write-register! cpu register value)
   (if (symbol? register)
-	(make-register-long cpu register)
+	(write-register-long! cpu register value)
 	(vector-set! (cpu-registers cpu) register value)))
+
+(define (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER (add1 (pc cpu))))
+
+(define (increment-register-long cpu register)
+  (write-register! cpu register (add1 (make-register-long cpu register))))
+
+(define (decrement-register-long cpu register)
+  (write-register! cpu register (- (make-register-long cpu register) 1)))
 	
 
 ;;; pushes register onto stack
-;(define (push-register cpu register)
-;  (vector-set! (cpu-stack cpu) (
+(define (push-register cpu register)
+  (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) (read-register cpu register))
+  (increment-register-long cpu 'STACK-POINTER))
+
+(define (pop-register cpu register)
+  (decrement-register-long cpu 'STACK-POINTER)
+  (write-register! cpu register (vector-ref (cpu-stack cpu) (read-register cpu 'STACK-POINTER))))
 
 ;;; returns value of program counter
 (define (pc cpu)
@@ -194,7 +198,11 @@
   (make-hash-table))
 
 (define (lookup-opcode opcode)
-  (hash-table-ref opcode-table opcode))
+  (case (extract-upper-nibble opcode)
+    ((#b0110) (hash-table-ref opcode-table #b01100000))
+    ((#b0111) (hash-table-ref opcode-table #b01110000))
+    ((#b1000) (hash-table-ref opcode-table #b10000000))
+    (else (hash-table-ref opcode-table opcode))))
 
 (define (install-opcode opcode action)
   (hash-table-set! opcode-table opcode action))
@@ -214,6 +222,8 @@
   (install-opcode #b00011001 INSTRUCTION-dec)
   (install-opcode #b01100000 INSTRUCTION-clr)
   (install-opcode #b10010000 INSTRUCTION-mov)
+  (install-opcode #b01110000 INSTRUCTION-psh)
+  (install-opcode #b10000000 INSTRUCTION-pop)
   (install-opcode #b10100000 INSTRUCTION-jmp)
   (install-opcode #b10100001 (make-conditional-jump-instruction 'ZERO))
   (install-opcode #b10100010 (make-conditional-jump-instruction 'SIGN))
@@ -237,7 +247,7 @@
   (if (zero? (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t)))
   
-(define (print-registers-pretty cpu)
+(define (prp cpu)
   (print-registers-pretty-func cpu (vector->list (cpu-registers cpu)) 0))
 
 (define (print-registers-pretty-func cpu lst n)
@@ -248,9 +258,6 @@
 	     (print-registers-pretty-func cpu (cdr lst) (add1 n)))))
 
 
-(define (increment-PROGRAM-COUNTER cpu)
-  (write-register! cpu 'PROGRAM-COUNTER (add1 (pc cpu))))
-
 ;;;;;;;;
 ;;;
 ;;; INSTRUCTION DEFINITIONS
@@ -258,7 +265,7 @@
 ;;;;;;;;
 
 (define (INSTRUCTION-hlt cpu)
-  (print-registers-pretty cpu))
+  (prp cpu))
 
 (define (INSTRUCTION-nop cpu)
   (increment-PROGRAM-COUNTER cpu)
@@ -279,6 +286,16 @@
   (write-register! cpu 
    (extract-lower-nibble (fetch-memory cpu))
    (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-psh cpu)
+  (push-register cpu (extract-lower-nibble (fetch-memory cpu)))
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-pop cpu)
+  (pop-register cpu (extract-lower-nibble (fetch-memory cpu)))
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
