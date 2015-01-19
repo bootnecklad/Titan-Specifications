@@ -227,7 +227,11 @@
   (install-opcode #b10100000 INSTRUCTION-jmp)
   (install-opcode #b10100001 (make-conditional-jump-instruction 'ZERO))
   (install-opcode #b10100010 (make-conditional-jump-instruction 'SIGN))
-  (install-opcode #b10100011 (make-conditional-jump-instruction 'CARRY)))
+  (install-opcode #b10100011 (make-conditional-jump-instruction 'CARRY))
+  (install-opcode #b10100100 INSTRUCTION-jpi)
+  (install-opcode #b10100101 INSTRUCTION-jsr)
+  (install-opcode #b10100110 INSTRUCTION-rtn)
+  (install-opcode #b10101000 INSTRUCTION-jmi))
 
 (define (controller cpu)
   (let* ((address (pc cpu))
@@ -271,41 +275,6 @@
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
-(define (INSTRUCTION-add cpu)
-  (increment-PROGRAM-COUNTER cpu)
-  (write-register! cpu
-   (extract-lower-nibble (fetch-memory cpu))
-   (+ (read-register cpu (extract-lower-nibble (fetch-memory cpu)))
-      (read-register cpu (extract-upper-nibble (fetch-memory cpu)))))
-  (set-condition-states cpu)
-  (increment-PROGRAM-COUNTER cpu)
-  (controller cpu))
-
-(define (INSTRUCTION-mov cpu)
-  (increment-PROGRAM-COUNTER cpu)
-  (write-register! cpu 
-   (extract-lower-nibble (fetch-memory cpu))
-   (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
-  (increment-PROGRAM-COUNTER cpu)
-  (controller cpu))
-
-(define (INSTRUCTION-psh cpu)
-  (push-register cpu (extract-lower-nibble (fetch-memory cpu)))
-  (increment-PROGRAM-COUNTER cpu)
-  (controller cpu))
-
-(define (INSTRUCTION-pop cpu)
-  (pop-register cpu (extract-lower-nibble (fetch-memory cpu)))
-  (increment-PROGRAM-COUNTER cpu)
-  (controller cpu))
-
- (define (INSTRUCTION-jmp cpu)
-   (increment-PROGRAM-COUNTER cpu)
-   (write-register! cpu 'PROGRAM-COUNTER
-		   (+ (arithmetic-shift (fetch-memory cpu) 8)
-		      (read-memory cpu (add1 (pc cpu)))))
-   (controller cpu))
-
 (define (INSTRUCTION-not cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu
@@ -314,7 +283,6 @@
   (set-condition-states cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
-
 (define (INSTRUCTION-shr cpu)
   (increment-PROGRAM-COUNTER cpu)
   (if (LSB? cpu (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
@@ -365,11 +333,76 @@
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
+(define (INSTRUCTION-psh cpu)
+  (push-register cpu (extract-lower-nibble (fetch-memory cpu)))
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-pop cpu)
+  (pop-register cpu (extract-lower-nibble (fetch-memory cpu)))
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
 (define (INSTRUCTION-clr cpu)
    (write-register! cpu (extract-lower-nibble (fetch-memory cpu)) 0)
 		    (increment-PROGRAM-COUNTER cpu)
 		    (controller cpu))
 
+
+(define (INSTRUCTION-mov cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 
+   (extract-lower-nibble (fetch-memory cpu))
+   (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+
+ (define (INSTRUCTION-jmp cpu)
+   (increment-PROGRAM-COUNTER cpu)
+   (write-register! cpu 'PROGRAM-COUNTER
+		   (+ (arithmetic-shift (fetch-memory cpu) 8)
+		      (read-memory cpu (add1 (pc cpu)))))
+   (controller cpu))
+
+(define (INSTRUCTION-jpi cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER
+		   (+ (arithmetic-shift (read-memory cpu (fetch-address-from-memory cpu (pc cpu))) 8)
+		      (read-memory cpu (add1 (fetch-address-from-memory cpu (pc cpu))))))
+  (controller cpu))
+		   
+
+; returns 16 bit value stored at the address in argument of function
+(define (fetch-address-from-memory cpu address)
+  (+ (arithmetic-shift (read-memory cpu address) 8)
+     (read-memory cpu (add1 address))))
+
+(define (INSTRUCTION-jsr cpu)
+  (push-value cpu (extract-lower-byte (+ (pc cpu) 3)))
+  (push-value cpu (extract-upper-byte (+ (pc cpu) 3)))
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER
+		   (+ (arithmetic-shift (fetch-memory cpu) 8)
+		      (read-memory cpu (add1 (pc cpu)))))
+  (controller cpu))
+
+(define (push-value cpu value)
+  (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) value)
+  (increment-register-long cpu 'STACK-POINTER))
+
+(define (INSTRUCTION-rtn cpu)
+  (pop-register cpu #xE)
+  (pop-register cpu #xF)
+  (controller cpu))
+
+(define (INSTRUCTION-jmi cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER
+		   (+ (arithmetic-shift (fetch-memory cpu) 8)
+		      (read-memory cpu (add1 (pc cpu)))
+		      (read-register cpu #x0)))
+  (controller cpu))
 
 
 
