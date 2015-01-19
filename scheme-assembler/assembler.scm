@@ -333,7 +333,7 @@
     ((STI) (list (bitwise-ior (car instr) (cadr instr)) (if (= 4 (length instr))
                                                             (combine-nibbles (caddr instr) (cadddr instr))
                                                             (split-address (caddr instr)))))
-    ((LDC) (list (bitwise-ior (car instr) (cadr instr)) (split-address (caddr instr))))
+    ((LDC) (list (bitwise-ior (car instr) (cadr instr)) (caddr instr)))
     ((LDM) (list (bitwise-ior (car instr) (cadr instr)) (split-address (caddr instr))))
     ((STM) (list (bitwise-ior (car instr) (cadr instr)) (split-address (caddr instr))))
     ((JMP) (list (car instr) (split-address (cadr instr))))
