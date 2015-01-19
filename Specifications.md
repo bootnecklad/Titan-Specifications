@@ -156,7 +156,7 @@ Only JMI has indexed addressing.
     1 0 1 0   1   0 0 0   -  (JMI #xZZZZ)   - Where base address is 0xZZZZ and offset is in R1
     1 0 1 0   1   0 0 1   -  (JMI #(R1 R2)) - Where address to jump to is in R1(high byte) and R2(low byte) (can only be R1 & R2)
 
-## LDI+STI (Indexed Load/Store Memory) ##
+## Indexed Load/Store Memory ##
 
     Opcode    I     Dst
     -------   --   ------
@@ -167,14 +167,14 @@ Only JMI has indexed addressing.
 
 
 
-## LDC Rn,0xZZ ##
+## Load Constant ##
 
     Opcode   Cond
     -------  -------
     1 1 0 1  D D D D   - (LDC Rd #xZZ)
 
 
-## LDM+STM (Load/Store Memory) ##
+## Load/Store Memory ##
 
     Opcode     Dst
     -------   ------
@@ -195,6 +195,8 @@ These pseudo instructions are built into the assembler, this makes code cleaner.
     (SHL Rs) - Simple ADD Rn,Rn - shifts all bits towards the carry bit, highest significant bit sent into carry
     (TST Rs) - XOR Rn,Rn - Tests if a register is zero or not.
 
+
+### Assembly directives ###
 
 Labels are used to write programs, you dont want to be dealing with straight addresses. It hurts. A lot!
 
