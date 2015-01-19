@@ -58,7 +58,7 @@
                           (JMI #f) (LDI #f) (STI #f) (LDC 2) (LDM 3) (STM 3)))
 
 ;;; defines the machine code values for different opcodes
-(define opcodes '((NOP #x00) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (LOR #x14) (XOR #x14) (NOT #x16)
+(define opcodes '((NOP #x00) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (LOR #x14) (XOR #x15) (NOT #x16)
                   (SHR #x17) (INC #x18) (DEC #x19) (INT #x20) (RTE #x21) (CLR #x60) (PSH #x70) (POP #x80)
                   (MOV #x90) (JMP #xA0) (JPZ #xA1) (JPS #xA2) (JPC #xA3) (JPI #xA4) (JSR #xA5) (RTN #xA6)
                   (LDC #xD0) (LDM #xE0) (STM #xF0) (JMI #f) (LDI #f) (STI #f) (TST #f) (SHL #f)))
@@ -263,6 +263,8 @@
 (define (split-address addr)
   (list (arithmetic-shift addr -8)
         (bitwise-and #x00ff addr)))
+
+
 
 ;;; removes directives from almost final program
 (define (remove-directives prog)
