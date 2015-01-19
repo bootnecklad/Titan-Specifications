@@ -49,6 +49,12 @@ On the front panel there are eight control switches, they have the following fun
 
 ## Notation ##
 
+Titan uses S-expression-style assembly. Each assembly program is a list of instructions. Instead of the assembler operating on assembly code as a textual representation, it instead has a SYMBOLIC representation.
+
+    why does this symbolic stuff make a difference!!!
+
+Symbolic expressions make instructions into manipulable objects, that can be created, modified, stored, and printed. Assembly programs and the component instructions are first-class, and functions can both take them as arguments and produce them as output.
+
     Rs = Source register
     Rd = Destination register
     Rl = Low byte source register
@@ -73,7 +79,8 @@ On the front panel there are eight control switches, they have the following fun
 
     Opcode   Cond
     -------  -------
-	0 0 0 0  0 0 0 0  - (NOP) - Performs a No Operation
+    0 0 0 0  0 0 0 0  - (NOP) - Performs a No Operation
+    0 0 0 0  0 0 0 1  - (HLT) - Stops the clock
 
 ## Arithmetic ##
 
