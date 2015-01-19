@@ -47,25 +47,6 @@ On the front panel there are eight control switches, they have the following fun
 
 ## ISA - Instruction Set Architecture ##
 
-## Opcode summary ##
-
-    0000 NOP
-    0001 ART
-    0010 INT
-    0011 UNUSED
-    0100 UNUSED
-    0101 UNUSED
-    0110 CLR
-    0111 PSH
-    1000 POP
-    1001 REG
-    1010 JMP
-    1011 LDI
-    1100 STI
-    1101 LDC
-    1110 LDM
-    1111 STM
-
 ## Notation ##
 
     Rs = Source register
