@@ -192,15 +192,6 @@
     ((.ASCIZ) (append (map char->integer (string->list (caddr instr))) '(0)))
     (else (error "INVALID TITAN DIRECTIVE"))))
 
-;;; substitutes
-(define (substitute prog label value)
-  (map (lambda (element)
-         (cond
-          ((eq? label element) value)
-          ((list? element) (substitute element label value))
-          (else element)))
-       prog))
-
 (define (label-in-instr? label instr)
   (and (directive? instr)
        (eq? label (cadr instr))))
@@ -218,11 +209,6 @@
       (if (eq? n 0)
           (car lst)
           (get-nth (- n 1) (cdr lst) ))))
-
-(define (extract-directives lst)
-  (if (null? lst)
-      nil
-      (cons (cadar lst) (extract-directives (cdr lst)))))
 
 (define (extract-directives lst)
   (map cadr lst))
@@ -330,11 +316,93 @@
    ((instruction? instr) (desguar-pseudo-instruction instr))
    (else (error "INVALD TITAN ASM"))))
 
+(define (env-lookup name env)
+  (if (null? env)
+      (error "Couldn't resolve name" name)
+      (let ((key-value (car env)))
+        (if (eq? name (car key-value))
+            ;; Return the value
+            (cdr key-value)
+            ;; Keep searching the environment.
+            (env-lookup name (cdr env))))))
+
+(define (register? s)
+  (and (member s (map car registers)) #t))
+
+(define (substitute-instruction instr env)
+  (cons (car instr)
+        (map (lambda (thing)
+               (substitute-alias thing env))
+             (cdr instr))))
+
+(define (substitute-alias thing env)
+  (cond
+   ((not (symbol? thing)) thing)
+   ((register? thing) thing)
+   (else (env-lookup thing env))))
+
+(define (desugar-labels prog offset)
+  (define (desugar prog resolved-prog len)
+    (if (null? prog)
+        (reverse resolved-prog)
+        (let ((instr (car prog)))
+          (if (label? instr)
+              (desugar (cdr prog)
+                       (cons
+                        (list '.WORD (second instr) len)
+                        resolved-prog)
+                       len)
+              (desugar (cdr prog)
+                       (cons instr resolved-prog)
+                       (+ len (compute-length instr)))))))
+  
+  ;; Desugar the labels of our program, starting with the length as
+  ;; `offset'.
+  (desugar prog nil offset))
+  
+(define (alias-environment prog)
+  (define (resolve prog resolved-prog env)
+    (if (null? prog)
+        (list (reverse resolved-prog) env)
+        (let ((instr (car prog)))
+          (cond
+           ((directive? instr)
+            (case (car instr)
+              ;; We have a .BYTE or .WORD which define a
+              ;; substitution. Add the substitution to our environment
+              ;; and throw out the directive.
+              ((.BYTE .WORD)
+               (resolve (cdr prog)
+                        resolved-prog
+                        ;;          NAME           VALUE
+                        (cons (cons (second instr) (third instr))
+                              env)))
+
+              ;; Directive doesn't have any alias bindings. Keep the
+              ;; directive.
+              (else (resolve (cdr prog)
+                             (cons instr resolved-prog)
+                             env))))
+           
+           ;; We have a normal instruction. Make substitutions if
+           ;; necessary, and move on to the rest of the instructions.
+           ((instruction? instr)
+            (resolve (cdr prog)
+                     (cons instr resolved-prog)
+                     env))))))
+  
+  (resolve prog nil nil))
+
 ;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
 (define (assembler prog offset)
   (let* ((prog-one (append-map desugar-directives-transformer prog))
-	 (prog-two (append-map desugar-pseudo-instruction-transformer prog-one)))
-    prog-two))
+	 (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
+	 (prog-three (desugar-labels prog-two offset))
+	 (prog-four/env (alias-environment prog-three))
+	 (prog-four (first prog-four/env))
+	 (env (second prog-four/env))
+	 (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four)))
+    prog-five))
     
 
 ;;; THE BIG DIRTY
