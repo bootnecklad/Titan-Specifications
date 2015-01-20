@@ -10,6 +10,7 @@
 ;;;  second actually assembles the ins and uses the values it aquired from the first pass
 
 (use srfi-13)
+(use (srfi 1))
 (define nil '())
 
 ;; Different components of a Titan program
@@ -147,10 +148,7 @@
 
 ;;; begins converting instructions into machine code values
 (define (begin-convert prog)
-  (if (null? prog)
-      nil
-      (cons (convert (car prog))
-            (begin-convert (cdr prog)))))
+  (map convert prog))
 
 ;;; begins converting process
 (define (convert instr)
@@ -186,12 +184,12 @@
 ;;; converts directives into machine code form
 (define (convert-directive instr)
   (case (car instr)
-    ((.RAW) (cadr instr))
+    ((.RAW) (cdr instr))
     ((.BYTE .WORD) instr)
     ((.DATA) (cddr instr))
     ((.LABEL) instr)
     ((.ASCII) (map char->integer (string->list (caddr instr))))
-    ((.ASCIZ) (list (map char->integer (string->list (caddr instr))) 0))
+    ((.ASCIZ) (append (map char->integer (string->list (caddr instr))) '(0)))
     (else (error "INVALID TITAN DIRECTIVE"))))
 
 ;;; substitutes
@@ -226,6 +224,9 @@
       nil
       (cons (cadar lst) (extract-directives (cdr lst)))))
 
+(define (extract-directives lst)
+  (map cadr lst))
+
 (define (extract-addr lst prog offset)
   (if (null? lst)
       nil
@@ -242,7 +243,6 @@
   (if (null? tbl)
       lst
       (substitute-all (substitute lst (caar tbl) (cadar tbl)) (cdr tbl))))
-
 
 ;;; adds offset to address-list
 (define (add-offset offset lst)
@@ -263,8 +263,6 @@
 (define (split-address addr)
   (list (arithmetic-shift addr -8)
         (bitwise-and #x00ff addr)))
-
-
 
 ;;; removes directives from almost final program
 (define (remove-directives prog)
@@ -298,14 +296,56 @@
   (print-length (assembler prog offset))
   (print-bytes (assembler prog offset) 0))
 
-;;; THE BIG DIRTY
+(define (desugar-directive directive)
+  (case (car directive)
+    ((.RAW .BYTE .WORD .LABEL) (list directive))
+    ((.DATA) (list
+	      (list '.LABEL (cadr directive))
+	      (cons '.RAW (cddr directive))))
+    ((.ASCII) (list
+	       (list '.LABEL (cadr directive))
+	       (cons '.RAW (map char->integer (string->list (caddr directive))))))
+    ((.ASCIZ)  (list
+		(list '.LABEL (cadr directive))
+		(append
+		 (cons '.RAW (map char->integer (string->list (caddr directive))))
+		 '(0))))
+    (else (error "INVALID TITAN DIRECTIVE" (car directive)))))
+
+(define (desugar-directives-transformer instr)
+  (cond
+   ((directive? instr) (desugar-directive instr))
+   ((instruction? instr) (list instr))
+   (else (error "INVALD TITAN ASM"))))
+
+(define (desguar-pseudo-instruction instr)
+  (case (car instr)
+    ((SHL) (list (list 'ADD (cadr instr) (cadr instr))))
+    ((TST) (list (list 'XOR (cadr instr) (cadr instr))))
+    (else (list instr))))
+
+(define (desugar-pseudo-instruction-transformer instr)
+  (cond
+   ((directive? instr) (list instr))
+   ((instruction? instr) (desguar-pseudo-instruction instr))
+   (else (error "INVALD TITAN ASM"))))
+
+;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
 (define (assembler prog offset)
-  (flatten
-   (remove-directives
-    (merge prog
-           (substitute-all (substitute-all (begin-convert prog)
-                                           (create-subs prog offset))
-                           registers)))))
+  (let* ((prog-one (append-map desugar-directives-transformer prog))
+	 (prog-two (append-map desugar-pseudo-instruction-transformer prog-one)))
+    prog-two))
+    
+
+;;; THE BIG DIRTY
+;(define (assembler prog offset)
+;  (flatten
+;   (remove-directives
+;    (merge prog
+;           (substitute-all (substitute-all (begin-convert prog)
+;                                           (create-subs prog offset))
+;                           registers)))))
+
 
 ;;; does all the dirty work
 (define (do-merge orig-instr instr)
