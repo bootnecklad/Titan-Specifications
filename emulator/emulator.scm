@@ -66,7 +66,6 @@
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
 
-
 ;;;;;;;;
 ;;;
 ;;; PROCESSOR DEFINITIONS
@@ -111,7 +110,6 @@
                                 (write-bytes (+ address 1) (cdr bytes)))))))
     (write-bytes starting-address bytes)))
 
-
 ;;; REGISTER-ONE REGISTER-TWO ... REGISTER-A REGISTER-B ... REGISTER-F
 (define (read-register cpu register)
   (if (symbol? register)
@@ -132,8 +130,7 @@
 
 (define (decrement-register-long cpu register)
   (write-register! cpu register (- (make-register-long cpu register) 1)))
-	
-
+ 
 ;;; pushes register onto stack
 (define (push-register cpu register)
   (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) (read-register cpu register))
@@ -176,7 +173,6 @@
 	  (increment-PROGRAM-COUNTER cpu)
 	  (increment-PROGRAM-COUNTER cpu)))
     (controller cpu)))
-
 
 ;;; QUAD WROTE THIS
 (define (make-arithmetic-instruction operator)
@@ -272,7 +268,6 @@
       (begin (print "REGISTER-" (dec->hex n) ": " (dec->hex (car lst)))
 	     (print-registers-pretty-func cpu (cdr lst) (add1 n)))))
 
-
 ;;;;;;;;
 ;;;
 ;;; INSTRUCTION DEFINITIONS
@@ -359,7 +354,6 @@
 		    (increment-PROGRAM-COUNTER cpu)
 		    (controller cpu))
 
-
 (define (INSTRUCTION-mov cpu)
   (increment-PROGRAM-COUNTER cpu)
   (write-register! cpu 
@@ -368,13 +362,12 @@
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
-
- (define (INSTRUCTION-jmp cpu)
-   (increment-PROGRAM-COUNTER cpu)
-   (write-register! cpu 'PROGRAM-COUNTER
+(define (INSTRUCTION-jmp cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER
 		   (+ (arithmetic-shift (fetch-memory cpu) 8)
 		      (read-memory cpu (add1 (pc cpu)))))
-   (controller cpu))
+  (controller cpu))
 
 (define (INSTRUCTION-jpi cpu)
   (increment-PROGRAM-COUNTER cpu)
@@ -383,7 +376,6 @@
 		      (read-memory cpu (add1 (fetch-address-from-memory cpu (pc cpu))))))
   (controller cpu))
 		   
-
 ; returns 16 bit value stored at the address in argument of function
 (define (fetch-address-from-memory cpu address)
   (+ (arithmetic-shift (read-memory cpu address) 8)
@@ -421,7 +413,6 @@
 		   (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (fetch-memory cpu))) 8)
 		      (read-register cpu (extract-lower-nibble (fetch-memory cpu)))))
   (controller cpu))
-
 
 (define (INSTRUCTION-ldi cpu)
   (if (bit-set? (extract-lower-nibble (fetch-memory cpu)) 3)
@@ -475,43 +466,6 @@
   (increment-PROGRAM-COUNTER cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
-  
-      
-;(define (INSTRUCTION-ldi cpu)
-;  (write-register! cpu (extract-lower-nibble (fetch-memory cpu))
-;		   (read-memory cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
-;					 (read-memory cpu (+ (pc cpu) 2))
-;					 (read-register cpu 1))))
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (controller cpu))
-
-;(define (INSTRUCTION-ldi-reg cpu)
-;  (write-register! cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000)
-;		   (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 pc cpu)))) 8)
-;		      (read-register cpu (extract-lower-nibble (read-memory cpu (add1 pc cpu))))))
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (controller cpu))
-
-;(define (INSTRUCTION-sti cpu)
-;  (write-memory! cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
-;			(read-memory cpu (+ (pc cpu) 2))
-;			(read-register cpu 1))
-;		 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (controller cpu))
-
-;(define (INSTRUCTION-sti-reg cpu)
-;  (write-memory! cpu (read-memory cpu (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 (pc cpu))))) 8)
-;					 (read-register cpu (extract-lower-nibble (read-memory cpu (add1 (pc cpu)))))))
-;		 (read-register cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000)))
-;  (increment-PROGRAM-COUNTER cpu)
-;  (increment-PROGRAM-COUNTER cpu)
-;  (controller cpu))
 
 
 ;;;;;;;;;;;;;;;;;;;
