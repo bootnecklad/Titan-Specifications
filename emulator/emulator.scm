@@ -202,6 +202,11 @@
     ((#b0110) (hash-table-ref opcode-table #b01100000))
     ((#b0111) (hash-table-ref opcode-table #b01110000))
     ((#b1000) (hash-table-ref opcode-table #b10000000))
+    ((#b1011) (hash-table-ref opcode-table #b10110000))
+    ((#b1100) (hash-table-ref opcode-table #b11000000))
+    ((#b1101) (hash-table-ref opcode-table #b11010000))
+    ((#b1110) (hash-table-ref opcode-table #b11100000))
+    ((#b1111) (hash-table-ref opcode-table #b11110000))
     (else (hash-table-ref opcode-table opcode))))
 
 (define (install-opcode opcode action)
@@ -231,7 +236,13 @@
   (install-opcode #b10100100 INSTRUCTION-jpi)
   (install-opcode #b10100101 INSTRUCTION-jsr)
   (install-opcode #b10100110 INSTRUCTION-rtn)
-  (install-opcode #b10101000 INSTRUCTION-jmi))
+  (install-opcode #b10101000 INSTRUCTION-jmi)
+  (install-opcode #b10101001 INSTRUCTION-jmi-reg)
+  (install-opcode #b10110000 INSTRUCTION-ldi)
+  (install-opcode #b11000000 INSTRUCTION-sti)
+  (install-opcode #b11010000 INSTRUCTION-ldc)
+  (install-opcode #b11100000 INSTRUCTION-ldm)
+  (install-opcode #b11110000 INSTRUCTION-stm))
 
 (define (controller cpu)
   (let* ((address (pc cpu))
@@ -404,6 +415,103 @@
 		      (read-register cpu #x0)))
   (controller cpu))
 
+(define (INSTRUCTION-jmi-reg cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (write-register! cpu 'PROGRAM-COUNTER
+		   (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (fetch-memory cpu))) 8)
+		      (read-register cpu (extract-lower-nibble (fetch-memory cpu)))))
+  (controller cpu))
+
+
+(define (INSTRUCTION-ldi cpu)
+  (if (bit-set? (extract-lower-nibble (fetch-memory cpu)) 3)
+      (begin  (write-register! cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000)
+			       (read-memory cpu (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 (pc cpu))))) 8)
+				  (read-register cpu (extract-lower-nibble (read-memory cpu (add1 (pc cpu)))))))))
+      (begin  (write-register! cpu (extract-lower-nibble (fetch-memory cpu))
+			       (read-memory cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+						   (read-memory cpu (+ (pc cpu) 2))
+						   (read-register cpu 1))))
+	      (increment-PROGRAM-COUNTER cpu)))
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-sti cpu)
+  (if (bit-set? (extract-lower-nibble (fetch-memory cpu)) 3)
+      (begin (write-memory! cpu (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 (pc cpu))))) 8)
+						    (read-register cpu (extract-lower-nibble (read-memory cpu (add1 (pc cpu))))))
+			    (read-register cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000))))
+      (begin (write-memory! cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+				   (read-memory cpu (+ (pc cpu) 2))
+				   (read-register cpu 1))
+			    (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
+	     (increment-PROGRAM-COUNTER cpu)))
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-ldc cpu)
+  (write-register! cpu (extract-lower-nibble (fetch-memory cpu))
+		   (read-memory cpu (add1 (pc cpu))))
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-ldm cpu)
+  (write-register! cpu  (extract-lower-nibble (fetch-memory cpu))
+		   (read-memory cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+				       (read-memory cpu (+ (pc cpu) 2)))))
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+
+(define (INSTRUCTION-stm cpu)
+  (write-memory! cpu  (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+			 (read-memory cpu (+ (pc cpu) 2)))
+		 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (controller cpu))
+  
+      
+;(define (INSTRUCTION-ldi cpu)
+;  (write-register! cpu (extract-lower-nibble (fetch-memory cpu))
+;		   (read-memory cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+;					 (read-memory cpu (+ (pc cpu) 2))
+;					 (read-register cpu 1))))
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (controller cpu))
+
+;(define (INSTRUCTION-ldi-reg cpu)
+;  (write-register! cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000)
+;		   (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 pc cpu)))) 8)
+;		      (read-register cpu (extract-lower-nibble (read-memory cpu (add1 pc cpu))))))
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (controller cpu))
+
+;(define (INSTRUCTION-sti cpu)
+;  (write-memory! cpu (+ (arithmetic-shift (read-memory cpu (add1 (pc cpu))) 8)
+;			(read-memory cpu (+ (pc cpu) 2))
+;			(read-register cpu 1))
+;		 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (controller cpu))
+
+;(define (INSTRUCTION-sti-reg cpu)
+;  (write-memory! cpu (read-memory cpu (+ (arithmetic-shift (read-register cpu (extract-upper-nibble (read-memory cpu (add1 (pc cpu))))) 8)
+;					 (read-register cpu (extract-lower-nibble (read-memory cpu (add1 (pc cpu)))))))
+;		 (read-register cpu (- (extract-lower-nibble (fetch-memory cpu)) #b1000)))
+;  (increment-PROGRAM-COUNTER cpu)
+;  (increment-PROGRAM-COUNTER cpu)
+;  (controller cpu))
 
 
 ;;;;;;;;;;;;;;;;;;;
@@ -416,46 +524,3 @@
 
 (define (clr-pc cpu)
   (write-register! cpu 'PROGRAM-COUNTER 0))
-
-(define (load-test-prog cpu)
-  (poke-values cpu 0 
-	       #b00000000
-	       #b00000000
-	       #b00000000
-	       #b10010000
-	       #b00000001
-	       #b00000000
-	       #b00000000
-	       #b00010000
-	       #b00000001
-	       #b00000000
-	       #b10100000
-	       #b11110000
-	       #b00000000)
-  (poke-values cpu #b1111000000000000
-	       #b10010000
-	       #b00010010
-	       #b00000000
-	       #b00000001)
-  (write-register! titan 0 1))
-
-
-(define TEST-PROGRAM
-  '((.LABEL ADDRESSES)
-       (.WORD TEST-BRANCH #xF000)
-
-    (NOP)
-    (NOP)
-    (NOP)
-    (MOV R0 R1)
-    (NOP)
-    (NOP)
-    (ADD R0 R1)
-    (NOP)
-    (JMP TEST-BRANCH)
-    (NOP)
-
-    (.LABEL TEST-BRANCH)
-      (MOV R1 R2)
-      (NOP)
-      (HLT)))
