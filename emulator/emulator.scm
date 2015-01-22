@@ -478,3 +478,11 @@
 
 (define (clr-pc cpu)
   (write-register! cpu 'PROGRAM-COUNTER 0))
+
+(define (assemble-and-load cpu prog addr)
+  (define (deposit-prog cpu prog addr)
+    (if (null? prog)
+	(cpu-memory cpu)
+	(begin (write-memory! cpu addr (car prog))
+	       (deposit-prog cpu (cdr prog) (add1 addr)))))
+  (deposit-prog cpu (assembler prog addr) addr))
