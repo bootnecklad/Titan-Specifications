@@ -76,20 +76,23 @@
 (define stack-pointer-size 16)
 (define data-bus-size 8)
 (define number-of-registers 4)
+(define interrupt-handler-software-address #x1000)
 
 ;;; defines the processor
 (define-record cpu
   memory
   stack
   registers
-  conditions)
+  conditions
+  interrupts)
 
 ;;;
 (define (new-cpu)
   (make-cpu (make-vector (expt 2 address-bus-size) 0)
 	    (make-vector (expt 2 stack-pointer-size) 0)
 	    (make-vector 16 0)
-	    (make-vector 3 #f)))
+	    (make-vector 3 #f)
+	    (make-vector 9 #f)))
 
 ;;; reads particular address in memory
 (define (read-memory cpu address)
@@ -139,6 +142,10 @@
 (define (pop-register cpu register)
   (decrement-register-long cpu 'STACK-POINTER)
   (write-register! cpu register (vector-ref (cpu-stack cpu) (read-register cpu 'STACK-POINTER))))
+
+(define (push-value cpu value)
+  (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) value)
+  (increment-register-long cpu 'STACK-POINTER))
 
 ;;; returns value of program counter
 (define (pc cpu)
@@ -221,10 +228,12 @@
   (install-opcode #b00010111 INSTRUCTION-shr)
   (install-opcode #b00011000 INSTRUCTION-inc)
   (install-opcode #b00011001 INSTRUCTION-dec)
+  (install-opcode #b00100000 INSTRUCTION-int)
+  (install-opcode #b00100001 INSTRUCTION-rte)
   (install-opcode #b01100000 INSTRUCTION-clr)
-  (install-opcode #b10010000 INSTRUCTION-mov)
   (install-opcode #b01110000 INSTRUCTION-psh)
   (install-opcode #b10000000 INSTRUCTION-pop)
+  (install-opcode #b10010000 INSTRUCTION-mov)
   (install-opcode #b10100000 INSTRUCTION-jmp)
   (install-opcode #b10100001 (make-conditional-jump-instruction 'ZERO))
   (install-opcode #b10100010 (make-conditional-jump-instruction 'SIGN))
@@ -244,8 +253,53 @@
   (let* ((address (pc cpu))
          (opcode (read-memory cpu address))
          (action (lookup-opcode opcode)))
+    (interrupt-handler cpu)
     (action cpu)))
 
+(define (disable-interrupts cpu)
+  (vector-set! (cpu-interrupts cpu) 8 #t))
+
+(define (enable-interrupts cpu)
+  (vector-set! (cpu-interrupts cpu) 8 #f))
+
+(define (read-interrupt-request cpu int)
+  (vector-ref (cpu-interrupts cpu) int))
+
+(define (interrupt-request cpu int)
+  (vector-set! (cpu-interrupts cpu) int #t))
+
+(define (clear-interrupt-request cpu int)
+  (vector-set! (cpu-interrupts cpu) int #f))
+
+(define (interrupt-set? cpu)
+  (and (member #t (vector->list (cpu-interrupts cpu)))
+       #t))
+
+(define (interrupt-handling? cpu)
+  (vector-ref (cpu-interrupts cpu) 8))
+  
+(define (interrupt-handler cpu)
+  (if (and (not (interrupt-handling? cpu))
+	   (interrupt-set? cpu))
+      (begin (disable-interrupts cpu)
+	     (write-memory! cpu interrupt-handler-software-address (- (length (member #t (vector->list (cpu-interrupts cpu)))) 1))
+	     (store-registers cpu (add1 interrupt-handler-software-address))
+	     (write-register-long! cpu 'PROGRAM-COUNTER (+ interrupt-handler-software-address #x11)))))
+	    
+(define (store-registers cpu address)
+  (define (store-all-registers cpu address reg)
+    (if (not (= #x10 reg))
+	(begin (write-memory! cpu address (read-register cpu reg))
+	       (store-all-registers cpu (add1 address) (add1 reg)))))
+  (store-all-registers cpu int-addr 0))
+
+(define (restore-registers cpu address)
+  (define (read-all-registers cpu address reg)
+    (if (not (= #x10 reg))
+	(begin (write-register! cpu reg (read-memory cpu address))
+	       (read-all-registers cpu (add1 address) (add1 reg)))))
+  (read-all-registers cpu address 0))
+  
 (define (set-condition-states cpu)
   (if (< 255 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (begin
@@ -339,6 +393,21 @@
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
 
+(define (INSTRUCTION-int cpu)
+  (increment-PROGRAM-COUNTER cpu)
+  (disable-interrupts cpu)
+  (write-memory! cpu interrupt-handler-software-address (fetch-memory cpu))
+  (increment-PROGRAM-COUNTER cpu)
+  (store-registers cpu (add1 interrupt-handler-software-address))
+  (write-register-long! cpu 'PROGRAM-COUNTER (+ interrupt-handler-software-address #x11))
+  (controller cpu))
+
+(define (INSTRUCTION-rte cpu)
+  (clear-interrupt-request (read-memory cpu interrupt-handler-software-address))
+  (enable-interrupts cpu)
+  (restore-regiters cpu)
+  (controller cpu))
+
 (define (INSTRUCTION-psh cpu)
   (push-register cpu (extract-lower-nibble (fetch-memory cpu)))
   (increment-PROGRAM-COUNTER cpu)
@@ -389,10 +458,6 @@
 		   (+ (arithmetic-shift (fetch-memory cpu) 8)
 		      (read-memory cpu (add1 (pc cpu)))))
   (controller cpu))
-
-(define (push-value cpu value)
-  (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) value)
-  (increment-register-long cpu 'STACK-POINTER))
 
 (define (INSTRUCTION-rtn cpu)
   (pop-register cpu #xE)
@@ -466,7 +531,6 @@
   (increment-PROGRAM-COUNTER cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
-
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;
