@@ -182,6 +182,9 @@ These pseudo instructions are built into the assembler, this makes code cleaner.
 
     (SHL Rs) - Simple ADD Rn,Rn - shifts all bits towards the carry bit, highest significant bit sent into carry
     (TST Rs) - XOR Rn,Rn - Tests if a register is zero or not.
+    (JNZ #xZZZZ) - Jump if no zero flag set
+    (JNS #xZZZZ) - Jump if no sign flag set
+    (JNC #xZZZZ) - Jump if no carry flag set
 
 
 ### Assembly directives ###
@@ -189,7 +192,7 @@ These pseudo instructions are built into the assembler, this makes code cleaner.
 Labels are used to write programs, you dont want to be dealing with straight addresses. It hurts. A lot!
 
     (.LABEL LOOP)
-       (LDI R0 #x0000)   ; Fetchse byte from set of byes in memory
+       (LDI R0 #x0000)   ; Fetch byte from set of byes in memory
        (TST R0)          ; Tests byte fetched
        (JPZ END)         ; If 0x00 then end of the set
        (INC R1)          ; Next address must be +1 from previous
@@ -207,15 +210,18 @@ Below shows an ASCII string "BAR" that will be placed in memory at FOO, FOO is a
 
 Below is syntax for BYTE and WORD and DATA:
 
+    (.RAW #xFF)
     (.BYTE <label> #xZZ)
     (.WORD <label> #xZZZZ)
     (.DATA <label> #xZZ #xZZ ... #xZZ)
 
-Byte defines the label as a byte, this is used to map labels to interrupt codez, ie .BYTE END 0x05 ... INT END would call the interrupt 0x05. This is used to make software interrupts. You have to specify which interrupt code should be allocated, be careful though. You don't want to over write a previously allocated interrupt (assembler will warn of this). You must update the interrupt vector table to properly use software interrupts.
+Byte defines the label as a byte, this is used to map labels to interrupt codez, ie .BYTE END 0x05 ... INT END would call the interrupt 0x05. This is used to make software interrupts or get defined bytes into registers
 
 Word defines the label as the address, this is used to map labels to addresses. This time, any referance to the label in the rest of the program will return the value of the word. ie (.WORD HUE 0xFE5A) Would return 0xFE5A in (JMP HUE)
 
 Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data.
+
+Raw does the same as Data but there is no label mapped to the area where it its dumped into memory.
 
 Below is the syntax for including another file containing assembly, this allows routines to be called from another file.
 
