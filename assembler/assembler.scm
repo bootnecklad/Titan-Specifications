@@ -193,20 +193,11 @@
   (list (arithmetic-shift addr -8)
         (bitwise-and #x00ff addr)))
 
-;;; removes directives from almost final program
-(define (remove-directives prog)
-  (if (null? prog)
-      nil
-      (cons (if (directive? (car prog))
-                nil
-                (car prog))
-            (remove-directives (cdr prog)))))
-
 ;;; prints DA PROG
 (define (print-bytes bytes addr n)
   (cond
    ((null? bytes) (newline))
-   ((zero? (remainder n 8)) (newline) (print-word addr) (display ": ") (print-byte (car bytes)) (print-bytes (cdr bytes) (+ addr 8) (+ n 1)))
+   ((zero? (remainder n 4)) (newline) (print-word addr) (display ": ") (print-byte (car bytes)) (print-bytes (cdr bytes) (+ addr 4) (+ n 1)))
    (else (print-byte (car bytes)) (print-bytes (cdr bytes) addr (+ n 1)))))
 
 (define (print-byte n)
@@ -219,7 +210,6 @@
 			   ((<= n #xFF) (sprintf "00~X " n))
 			   ((<= n #xFFF) (sprintf "0~X " n))
 			   ((> n #xFFF) (sprintf "~X" n))))))
-
 
 ;;; prints length of program in bytes
 (define (print-length bytes)
@@ -253,10 +243,25 @@
    ((instruction? instr) (list instr))
    (else (error "INVALD TITAN ASM"))))
 
+(define jmp-counter 0)
+
+(define (counter)
+  (begin (set! jmp-counter (add1 jmp-counter))
+	 jmp-counter))
+
 (define (desguar-pseudo-instruction instr)
   (case (car instr)
     ((SHL) (list (list 'ADD (cadr instr) (cadr instr))))
     ((TST) (list (list 'XOR (cadr instr) (cadr instr))))
+    ((JNZ) (list (list 'JPZ (string->symbol (string-append "JMP-" (number->string (counter)))))
+		 (list 'JMP (cadr instr))
+		 (list '.LABEL (string->symbol (string-append "JMP-" (number->string (- (counter) 1)))))))
+    ((JNS) (list (list 'JPS (string->symbol (string-append "JMP-" (number->string (counter)))))
+		 (list 'JMP (cadr instr))
+		 (list '.LABEL (string->symbol (string-append "JMP-" (number->string (- (counter) 1)))))))
+    ((JNC) (list (list 'JPC (string->symbol (string-append "JMP-" (number->string (counter)))))
+		 (list 'JMP (cadr instr))
+		 (list '.LABEL (string->symbol (string-append "JMP-" (number->string (- (counter) 1)))))))
     (else (list instr))))
 
 (define (desugar-pseudo-instruction-transformer instr)
