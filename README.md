@@ -13,11 +13,11 @@ See the following link for an explanation of the ISA of the processor and assemb
 
 There are a few assemblers for Titan but only my own assembler in scheme can really be trusted to be accurate and up to date.
 
-[bootnecklad](https://github.com/bootnecklad)'s assembler in scheme can be found [here](https://github.com/bootnecklad/Titan-Specifications/tree/master/scheme-assembler).
+  - [bootnecklad](https://github.com/bootnecklad)'s assembler in scheme can be found [here](https://github.com/bootnecklad/Titan-Specifications/tree/master/scheme-assembler).
 
-[fatcookies](https://github.com/fatcookies)' wrote an assembler for both the desktop and android, they are available [here](https://github.com/fatcookies/Titan-Assembler).
+ - [fatcookies](https://github.com/fatcookies)' wrote an assembler for both the desktop and android, they are available [here](https://github.com/fatcookies/Titan-Assembler).
 
-[qu1j0t3's](https://github.com/qu1j0t3/) wrote an assembler, it can be found [here](https://github.com/qu1j0t3/bnl_titan).
+  - [qu1j0t3's](https://github.com/qu1j0t3/) wrote an assembler, it can be found [here](https://github.com/qu1j0t3/bnl_titan).
 
 
 ## Emulator(s) ##
