@@ -8,6 +8,7 @@
 (define nil '())
 (use srfi-13)
 (use srfi-69)
+(use (srfi 43))
 (use numbers)
 
 ;;;;;;;;
@@ -84,7 +85,8 @@
   stack
   registers
   conditions
-  interrupts)
+  interrupts
+  serial-buffer)
 
 ;;;
 (define (new-cpu)
@@ -92,7 +94,8 @@
 	    (make-vector (expt 2 stack-pointer-size) 0)
 	    (make-vector 16 0)
 	    (make-vector 3 #f)
-	    (make-vector 9 #f)))
+	    (make-vector 9 #f)
+	    (make-vector 256 0)))
 
 ;;; reads particular address in memory
 (define (read-memory cpu address)
@@ -531,6 +534,7 @@
   (increment-PROGRAM-COUNTER cpu)
   (increment-PROGRAM-COUNTER cpu)
   (controller cpu))
+
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;

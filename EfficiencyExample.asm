@@ -69,8 +69,40 @@ Machine code:
 0101 0110
 1101 0001
 0111 1111
-0000 0000
+0001 0000
 0000 0001
 1111 0000
 1111 1111
 1111 1111
+1010 0000
+0000 0000
+0000 1001
+
+
+
+
+
+(define EFFICIENCY-EXAMPLE '(
+
+(.WORD LED-OUTPUT #xFF00)
+
+(.LABEL BEGIN)
+   (LDC R0 #x56)
+   (LDC R1 #x7F)
+   (ADD R0 R1)
+   (STM R0 LED-OUTPUT)
+
+(.LABEL END)
+   (JMP END)))
+
+
+
+Machine code:
+
+#;49> (assemble EFFICIENCY-EXAMPLE 0)
+Length of program in bytes: 14
+
+D0 00 56 D1 00 7F 10 01 F0 00 00 A0 00 09 
+
+(define (print-bytes-binary bytes n)
+	

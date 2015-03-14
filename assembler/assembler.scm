@@ -9,12 +9,19 @@
 ;;;  first pass just counts how long every ins is and works out the address of variables and labels
 ;;;  second actually assembles the ins and uses the values it aquired from the first pass
 
+(use extras)
+(use srfi-1)
 (use srfi-13)
-(use (srfi 1))
+
 (define nil '())
 
 ;;; errors out when something is not implemented
 (define (not-implemented) (error "not implemented yet"))
+
+;;; gets program frome file
+(define read-titan-file
+  (lambda (filename)
+    (call-with-input-file filename read)))
 
 ;; Different components of a Titan program
 (define (directive? instr)
@@ -54,20 +61,17 @@
   (extract directive? prog))
 
 ;;; defines the lengths of the different opcodes
-(define opcode-lengths '( (NOP 1) (HLT 1) (ADD 2) (ADC 2) (SUB 2) (AND 2) (LOR 2) (XOR 2) (NOT 2)
-                          (SHR 2) (INC 2) (DEC 2) (INT 2) (RTE 1) (CLR 1) (PSH 1) (POP 1) (PEK 1)
-			  (DUP 1) (PSR 1) (POR 1) (PER 1) (DUR 1)
-                          (MOV 2) (JMP 3) (JPZ 3) (JPS 3) (JPC 3) (JPI 3) (JSR 3) (RTN 1)
-                          (JMI #f) (LDI #f) (STI #f) (LDC 2) (LDM 3) (STM 3)))
+(define opcode-lengths '((NOP 1) (HLT 1) (ADD 2) (ADC 2) (SUB 2) (AND 2) (IOR 2) (XOR 2) (NOT 2)
+                         (SHR 2) (INC 2) (DEC 2) (INT 2) (RTE 1) (CLR 1) (PSH 1) (POP 1) (PEK 1)
+                         (DUP 1) (PSR 1) (POR 1) (PER 1) (DUR 1) (MOV 2) (JPZ 3) (JPS 3) (JPC 3)
+                         (JPI 3) (JSR 3) (RTN 1) (LDC 2) (JMP #f) (LDM #f) (STM #f)))
 
 ;;; defines the machine code values for different opcodes
-(define opcodes '((NOP #x00) (HLT #x01) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (LOR #x14) (XOR #x15)
-		  (NOT #x16) (SHR #x17) (INC #x18) (DEC #x19) (INT #x20) (RTE #x21) (CLR #x60) (PSH #x70) 
-		  (POP #x80) (PEK #x90) (DUP #x91) (PSR #x83) (POR #x75) (PER #x81) (DUR #x85)
-		  (MOV #x90) (JMP #xA0) (JPZ #xA1) (JPS #xA2) (JPC #xA3) (JPI #xA4)
-		  (JSR #xA5) (RTN #xA6) (LDC #xD0) (LDM #xE0) (STM #xF0) 
-		  (JMI #f) (LDI #f) (STI #f) (TST #f) (SHL #f)))
-
+(define opcodes '((NOP #x00) (HLT #x01) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (IOR #x14) (XOR #x15)
+                  (NOT #x16) (SHR #x17) (INC #x18) (DEC #x19) (INT #x20) (RTE #x21) (CLR #x60) (PSH #x70) 
+                  (POP #x80) (PEK #x90) (DUP #x91) (PSR #x83) (POR #x75) (PER #x81) (DUR #x85) (MOV #x90)
+                  (JMP #xA0) (JPZ #xA1) (JPS #xA2) (JPC #xA3) (JPI #xA4) (JSR #xA5) (RTN #xA6) (LDC #xD0)
+                  (LDM #xE0) (STM #xF0)))
 
 ;;; defines the machine code values for different registers
 (define registers '((R0 #x0) (R1 #x1) (R2 #x2) (R3 #x3) (R4 #x4) (R5 #x5) (R6 #x6) (R7 #x7)
@@ -92,11 +96,60 @@
           (compute-instruction-length instr))
       (begin (display (car instr)) (error "INVALID TITAN INSTRUCTION"))))
 
-;;; computes the lengths of special instructions
-(define (compute-instruction-length instr)
-  (if (contains-word? instr)
-      2
-      3))
+(define register?
+  (lambda (register)
+    (if (and (symbol? register)
+             (member register (flatten registers)))
+        #t
+        #f)))
+
+(define autoincrement?
+       (lambda (instr)
+         (if (null? instr)
+             #f
+             (or (vector? (car instr))
+                  (autoincrement? (cdr instr))))))
+
+;;; computes the lengths of instructions with the same opcode but different addressing mode
+(define compute-instruction-length
+  (lambda (instr)
+    (case (car instr)
+      ((JMP) (compute-length-instr instr))
+      ((LDM) (compute-length-instr instr))
+      ((STM) (compute-length-instr (list (car instr) (caddr instr) (cadr instr))))
+      (else (begin (print instr) (error "INVALID TITAN INSTRUCITON"))))))
+
+(define compute-length-instr
+  (lambda (instr)
+    (cond
+     ((list? (second instr)) (compute-length-list instr))
+     ((and (= (length instr) 2)
+           (or (symbol? (second instr))
+               (number? (second instr)))) 3)
+     ((and (<= (length instr) 2)
+           (register? (second instr))) 2)
+     ((and (register? (second instr))
+           (register? (last instr))) 2)
+     ((autoincrement? instr) 2)
+     ((eq? '+ (second instr)) 2)
+     ((or (symbol? (third instr))
+          (number? (third instr))) 4)
+     ((number? (second instr)) 4)
+     (else (begin (print instr) (error "INVALID TITAN INSTRUCTION"))))))
+
+(define compute-length-list
+  (lambda (instr)
+    (cond
+     ((and (= 2 (length instr))
+           (number? (car (second instr)))) 3)
+     ((and (= 3 (length instr))
+           (number? (car (second instr)))) 4)
+     ((eq? '+ (car (second instr))) 2)
+     ((and (register? (car (second instr)))
+           (= 1 (length (second instr)))) 2)
+     ((and (register? (car (second instr)))
+           (= 2 (length (second instr)))) 4)
+     (else 3))))
 
 ;; tells us if an instruction contains an index word...
 (define (contains-word? instr)
@@ -139,28 +192,14 @@
   (cond
    ((instruction? instr) (convert-instr instr))
    ((directive? instr) (cdr instr))
-   (else (error "INVALD TITAN ASSEMBLY"))))
+   (else (begin (display instr) (error "INVALD TITAN ASSEMBLY")))))
 
 ;;; converts assembly instructions into machine code values
 (define (convert-instr instr)
   (if (member (car instr) (flatten opcodes))
-      (if (cadr (member (car instr) (flatten opcodes)))
-          (cons (cadr (member (car instr) (flatten opcodes)))
-                (cdr instr))
-          (convert-special-instr instr))
+      (cons (cadr (member (car instr) (flatten opcodes)))
+            (cdr instr))
       (begin (display instr) (error "INVALID TITAN INSTRUCTION"))))
-
-;;; converts special instructions
-(define (convert-special-instr instr)
-  (if (contains-word? instr)
-      (case (car instr)
-        ((JMI) (cons #xA9 (vector->list (cadr instr))))
-        ((LDI) (cons #xB8 (cons (cadr instr )(vector->list (caddr instr)))))
-        ((STI) (cons #xC8 (cons (cadr instr )(vector->list (caddr instr))))))
-      (case (car instr)
-        ((JMI) (cons #xA8 (cdr instr)))
-        ((LDI) (cons #xB0 (cdr instr)))
-        ((STI) (cons #xC0 (cdr instr))))))
 
 (define (substitute-all lst tbl)
   (if (null? tbl)
@@ -221,7 +260,8 @@
 ;;; this is the function that you actually call
 (define (assemble prog offset)
   (print-length (assembler prog offset))
-  (print-bytes (assembler prog offset) offset 0))
+  (print-bytes (assembler prog offset) offset 0)
+  (display "\n"))
 
 (define (desugar-directive directive)
   (case (car directive)
@@ -405,54 +445,125 @@
   
   (resolve prog nil nil))
 
+(define convert-autoincrement
+       (lambda (instr)
+         (if (null? instr)
+             nil
+             (cons (if (vector? (car instr))
+                       (vector-ref (car instr) 0)
+                       (car instr))
+                   (convert-autoincrement (cdr instr))))))
+
 ;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
 (define (assembler prog offset)
   (let* ((prog-one (append-map desugar-directives-transformer prog))
 	 (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
 	 (prog-three (desugar-labels prog-two offset))
-	 (prog-four/env (alias-environment prog-three))
+         (prog-three-point-five (map convert-autoincrement prog-three))
+         (prog-three-point-six (map flatten prog-three-point-five))
+	 (prog-four/env (alias-environment prog-three-point-six))
 	 (prog-four (first prog-four/env))
 	 (env (second prog-four/env))
 	 (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
-	 (prog-six (map convert prog-five))
-	 (prog-seven (substitute-all prog-six registers))
-	 (prog-eight (merge prog-five prog-seven))
+	 (prog-six (substitute-all prog-five registers))
+	 (prog-seven (map convert prog-six))
+	 (prog-eight (merge prog prog-seven))
 	 (prog-nine (flatten prog-eight)))
     prog-nine))
 
 ;;; does all the dirty work
 (define (do-merge orig-instr instr)
   (case (car orig-instr)
-    ((ADD) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((ADC) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((SUB) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((AND) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((LOR) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((XOR) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((MOV) (list (car instr) (combine-nibbles (cadr instr) (caddr instr))))
-    ((NOT) (list (car instr) (combine-nibbles (cadr instr) 0)))
-    ((SHR) (list (car instr) (combine-nibbles (cadr instr) 0)))
-    ((INC) (list (car instr) (combine-nibbles (cadr instr) 0)))
-    ((DEC) (list (car instr) (combine-nibbles (cadr instr) 0)))
-    ((CLR) (list (bitwise-ior (car instr) (cadr instr))))
-    ((PSH) (list (bitwise-ior (car instr) (cadr instr))))
-    ((POP) (list (bitwise-ior (car instr) (cadr instr))))
-    ((JMI) (list (car instr) (if (= 3 (length instr))
-                                 (combine-nibbles (cadr instr) (caddr instr))
-                                 (split-address (cadr instr)))))
-    ((LDI) (list (bitwise-ior (car instr) (cadr instr)) (if (= 4 (length instr))
-                                                            (combine-nibbles (caddr instr) (cadddr instr))
-                                                            (split-address (caddr instr)))))
-    ((STI) (list (bitwise-ior (car instr) (cadr instr)) (if (= 4 (length instr))
-                                                            (combine-nibbles (caddr instr) (cadddr instr))
-                                                            (split-address (caddr instr)))))
-    ((LDC) (list (bitwise-ior (car instr) (cadr instr)) (caddr instr)))
-    ((LDM) (list (bitwise-ior (car instr) (cadr instr)) (split-address (caddr instr))))
-    ((STM) (list (bitwise-ior (car instr) (cadr instr)) (split-address (caddr instr))))
-    ((JMP) (list (car instr) (split-address (cadr instr))))
-    ((JPZ) (list (car instr) (split-address (cadr instr))))
-    ((JPS) (list (car instr) (split-address (cadr instr))))
-    ((JPC) (list (car instr) (split-address (cadr instr))))
-    ((JPI) (list (car instr) (split-address (cadr instr))))
-    ((JSR) (list (car instr) (split-address (cadr instr))))
+    ((ADD) (assemble-RSRD instr))
+    ((ADC) (assemble-RSRD instr))
+    ((SUB) (assemble-RSRD instr))
+    ((AND) (assemble-RSRD instr))
+    ((IOR) (assemble-RSRD instr))
+    ((XOR) (assemble-RSRD instr))
+    ((MOV) (assemble-RSRD instr))
+    ((NOT) (assemble-RS instr))
+    ((SHR) (assemble-RS instr))
+    ((INC) (assemble-RS instr))
+    ((DEC) (assemble-RS instr))
+    ((CLR) (assemble-RS instr))
+    ((PSH) (assemble-RS instr))
+    ((POP) (assemble-RS instr))
+    ((LDC) (assemble-LDC instr))
+    ((LDM) (assemble-LDM orig-instr instr))
+    ((STM) (assemble-STM orig-instr instr))
+    ((JMP) (assemble-JMP orig-instr instr))
+    ((JPZ) (assemble-STD-JMP))
+    ((JPS) (assemble-STD-JMP))
+    ((JPC) (assemble-STD-JMP))
+    ((JPI) (assemble-STD-JMP))
+    ((JSR) (assemble-STD-JMP))
     (else instr)))
+
+(define assemble-RSRD
+  (lambda (instr)
+    (list (car instr)
+          (combine-nibbles (cadr instr) (caddr instr)))))
+
+(define assemble-RS
+  (lambda (instr)
+    (list (car instr)
+          (combine-nibbles (cadr instr) 0))))
+
+(define assemble-LDC
+  (lambda (instr)
+    (list (bitwise-ior (car instr) (caddr instr))
+          (cadr instr))))
+
+(define assemble-STD-JMP
+  (lambda (instr)
+    (list (car instr)
+          (split-address (cadr instr)))))
+
+
+;;; (LDM #xBABE R0) (LDM R0 R1)  (LDM (#xCAFE) R1) (LDM (+ R1) R0) (LDM (R2 #xDEAD) R3) (LDM (R0) R1) (LDM + R1 R3) (LDM R2 #xDEAD R3)
+;;; (STM R0 #xBABE) (STM R1 R0)  (STM R1 (#xCAFE)) (STM R0 (+ R1)) (LDM R3 (R2 #xDEAD)) (STM R1 (R0)) (STM R3 + R1) (STM R3 R2 #xDEAD)
+
+(define assemble-JMP
+  (lambda (orig-instr instr)
+    (cond
+     ((and (list? (second orig-instr))
+           (register? (car (second orig-instr)))
+           (= 2 (length (second orig-instr))))
+      (list (bitwise-ior (car instr) 7) (combine-nibbles (second instr) 0) (split-address (last instr))))
+
+     ((and (register? (second orig-instr))
+           (number? (last instr))
+           (= 3 (length instr)))
+      (list (bitwise-ior (car instr) 6) (combine-nibbles (second instr) 0) (split-address (last instr))))
+
+     ((and (vector? (second orig-instr))
+           (list? (vector-ref (second orig-instr) 0)))
+      (list (bitwise-ior (car instr) 5) (combine-nibbles (last instr) 0)))
+
+     ((and (vector? (second orig-instr))
+           (register? (vector-ref (second orig-instr) 0)))
+      (list (bitwise-ior (car instr) 4) (combine-nibbles (last instr) 0)))
+
+     ((and (number? (second instr))
+           (not (list? (second orig-instr)))
+           (not (register? (second orig-instr))))
+      (list (bitwise-ior (car instr) 0) (split-address (second instr))))
+
+     ((and (number? (second instr))
+           (list? (second orig-instr))
+           (not (register? (car (second orig-instr)))))
+      (list (bitwise-ior (car instr) 1) (split-address (second instr))))
+
+     ((and (= (length instr) 2)
+           (register? (second orig-instr)))
+      (list (bitwise-ior (car instr) 2) (combine-nibbles (second instr) 0)))
+
+     ((= (length (second orig-instr)) 1)
+      (list (bitwise-ior (car instr) 3) (combine-nibbles (last instr) 0))))))
+
+;;; opening files and things
+
+(if (not (= (length (command-line-arguments)) 2))
+    (print "Useage: assemble input-file address-offset")
+    (assemble (read-titan-file (car (command-line-arguments)))
+              (string->number (cadr (command-line-arguments)))))
