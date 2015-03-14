@@ -5,12 +5,13 @@
 Currently, Titan has the following specifications:
 
     8 bit data bus
-    16 8 bit registers, mapped to them are the program counter and stack pointer
-    16 bit stack pointer(64k stack)
-    16 bit program counter
+    16 8 bit registers, R0 -> RF
+    16 bit data stack pointer(64k data stack) (Mapped to RD)
+    16 bit return stack pointer(64k return stack) (Mapped to RE)
+    16 bit program counter (Mapped to RF)
 	64k addressable memory
     Capable of 10 8bit arithmetic functions
-    Various addressing modes(Immediate, Indirect, Index, Register)
+    Various addressing modes(Immediate, Indirect, Index, Offset)
 	Memory mapped I/O
 	
 	Planned Memory map:
@@ -82,6 +83,8 @@ Symbolic expressions make instructions into manipulable objects, that can be cre
     0 0 0 0  0 0 0 0  - (NOP) - Performs a No Operation
     0 0 0 0  0 0 0 1  - (HLT) - Stops the clock
 
+
+
 ## Arithmetic ##
 
     Opcode   Cond
@@ -97,6 +100,16 @@ Symbolic expressions make instructions into manipulable objects, that can be cre
     0 0 0 1  1 0 0 0   -  (INC Rs) - Increments the source register
     0 0 0 1  1 0 0 1   -  (DEC Rs) - Decrements the source register
 
+Second byte of operations that take two registers as arguments is assembled into:
+
+    S S S S  D D D D
+
+Second byte of operation that take only one register as an argument is assembled into:
+
+    S S S S  D D D D
+
+
+
 ## Interrupt/Exception operations ##
 
 These are generally used as system calls, the interrupt vector addresses is stored in the EEPROM on the external address bus.
@@ -104,87 +117,166 @@ All registers are saved in a location in system memory when an interrupt is call
 
     Opcode   Cond
     -------  -------
-    0 0 1 0  0 0 0 0   -  (INT #x5A) - Calls interrupt 5A
+    0 0 1 0  0 0 0 0   -  (INT #xZZ) - Calls interrupt ZZ
     0 0 1 0  0 0 0 1   -  (RTE) - Return from exception/interrupt
 
 Where ZZZZ ZZZZ is the interrupt to call.
 
+
+
 ## Stack operations ##
+
+### Data stack ###
+
+Used for storage of data during program runtime.
 
     Opcode   Operand
     -------  -------
-    0 1 1 1  S S S S  - (PSH Rs) - Pushes Rs onto the stack
-    1 0 0 0  D D D D  - (POP Rd) - Pops the top of the stack into Rd
+    0 0 1 1  S S S S  - (PSH Rs) - Pushes Rs onto the data stack
+    0 1 0 0  D D D D  - (POP Rd) - Pops the top of the data stack into Rd
+    0 1 0 1  D D D D  - (PEK Rd) - Peeks the top of data stack into Rd
+
+### Return stack ###
+
+Return addresses are pushed onto the stack when Jump Subroutine instruction called. Modifificaiton is risky, could corrupt return address.
+
+    Opcode   Operand
+    -------  -------
+    0 1 1 0  S S S S  - (PSH Rs) - Pushes Rs onto the data stack
+    0 1 1 1  D D D D  - (POP Rd) - Pops the top of the data stack into Rd
+    1 0 0 0  D D D D  - (PEK Rd) - Peeks the top of data stack into Rd
 
 ## Register operations ##
 
     Opcode   Cond
     -------  -------
-    0 1 1 0  S S S S   -  (CLR Rs)    - Clears Rs
-    1 0 0 1  0 0 0 0   -  (MOV Rs Rd) - Moves Rs into Rd
+    1 0 0 1  S S S S   -  (CLR Rs)      - Clears Rs
+    1 0 1 0  0 0 0 0   -  (MOV Rs Rd)   - Moves Rs into Rd
+    1 0 1 1  D D D D   -  (LDC #xZZ Rd) - Loads #xZZ into Rd
+
 
 Second byte of MOV instruction is assembled into:
 
-SSSS DDDD
+    S S S S  D D D D
+
+Second byte of LDC instrucitno is assembled into:
+
+    Z Z Z Z  Z Z Z Z
+
 
 
 ## Jumps ##
 
-Only JMI has indexed addressing.
-
-    Opcode    I   Cond
-    -------  ---  -----
-    1 0 1 0   0   0 0 0   -  (JMP #xZZZZ)   - Direct jump to 0xZZZZ
-    1 0 1 0   0   0 0 1   -  (JPZ #xZZZZ)   - Jump if zero flag set
-    1 0 1 0   0   0 1 0   -  (JPS #xZZZZ)   - Jump if sign flag set
-    1 0 1 0   0   0 1 1   -  (JPC #xZZZZ)   - Jump if carry flag set
-    1 0 1 0   0   1 0 0   -  (JPI #xZZZZ)   - Indirect jump, point to a location in memory (0xZZZZ) and jumps to the value stored in the address (Big endian)
-    1 0 1 0   0   1 0 1   -  (JSR #xZZZZ)   - Push return address onto stack, direct jump to 0xZZZZ
-    1 0 1 0   0   1 1 0   -  (RTN)          - Returns to address thats stored on stack
-    1 0 1 0   1   0 0 0   -  (JMI #xZZZZ)   - Where base address is 0xZZZZ and offset is in R1
-    1 0 1 0   1   0 0 1   -  (JMI #(R1 R2)) - Where address to jump to is in R1(high byte) and R2(low byte) (can only be R1 & R2)
-
-## Indexed Load/Store Memory ##
-
-    Opcode    I     Dst
-    -------   --   ------
-    1 0 1 1   0    D D D    -  (LDI Rd #xZZZZ)   - Indexed load byte from memory, from address ZZZZ, offset in R1
-    1 1 0 0   0    S S S    -  (STI Rs #xZZZZ)   - Indexed store byte to memory, from address ZZZZ, offset in R1	
-    1 0 1 1   1    D D D    -  (LDI Rd #(R1 R2)) - Indexed load byte from memory, from address in R1(high byte) and R2(low byte)	
-    1 1 0 0   1    S S S    -  (STI Rs #(R1 R2)) - Indexed store byte to memory, from address in R1(high byte) and R2(low byte)
-
-
-
-## Load Constant ##
-
     Opcode   Cond
     -------  -------
-    1 1 0 1  D D D D   - (LDC Rd #xZZ)
+    1 0 1 0  0 0 0 0  -  (JMP #xZZZZ)      - Jump to address #xZZZZ
+    1 0 1 0  0 0 0 1  -  (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
+    1 0 1 0  0 0 1 0  -  (JMP Rs)          - Jump to the address in Rs
+    1 0 1 0  0 0 1 1  -  (JMP (Rs))        - Jump to the address at the address in Rs
+    1 0 1 0  0 1 0 0  -  (JMP + Rs)        - Jump to the address in Rn, then increment Rs
+    1 0 1 0  0 1 0 1  -  (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
+    1 0 1 0  0 1 1 0  -  (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
+    1 0 1 0  0 1 1 1  -  (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
+    1 0 1 0  1 0 0 0  -  (JPZ #xZZZZ)      - Jump to address #xZZZZ if zero flag set
+    1 0 1 0  1 0 0 1  -  (JNC #xZZZZ)      - Jump to address #xZZZZ if zero flag not set
+    1 0 1 0  1 0 1 0  -  (JPS #xZZZZ)      - Jump to address #xZZZZ if sign flag set
+    1 0 1 0  1 0 1 1  -  (JNS #xZZZZ)      - Jump to address #xZZZZ if sign flag not set
+    1 0 1 0  1 1 0 0  -  (JPC #xZZZZ)      - Jump to address #xZZZZ if carry flag set
+    1 0 1 0  1 1 0 1  -  (JNC #xZZZZ)      - Jump to address #xZZZZ if carry flag not set
+    1 0 0 1  0 0 0 0  -  (JPS #xZZZZ)      - Push return address onto return stack and jump to address #xZZZZ
+    1 0 1 0  0 0 0 0  -  (RET)             - POP return address of return stack into PC to return from subroutine
+
+Operations that take a register as an argiment has second byte assembled as:
+
+    S S S S  0 0 0 0
+
+Addresses are split when assembled and stored in big endian after the instruciton or regiter source:
+
+    H H H H  H H H H
+    L L L L  L L L L
+
 
 
 ## Load/Store Memory ##
 
-    Opcode     Dst
-    -------   ------
-    1 1 1 0   D D D D   -  (LDM Rs #xZZZZ) - Load byte from memory, from address ZZZZ to DDDD
-    1 1 1 1   S S S S   -  (STM Rd #xZZZZ) - Store byte to memory, to address ZZZZ, byte from SSSS.
+### Load from memory ###
+
+    Opcode   Cond
+    -------  -------
+    1 0 1 1  0 0 0 0  -  (LDM #xZZZZ Rd)      - Load the conents of #xZZZZ into Rd
+    1 0 1 1  0 0 0 1  -  (LDM (#xZZZZ) Rd)    - Load the contents of the address at #xZZZZ into Rd
+    1 0 1 1  0 0 1 0  -  (LDM Rs Rd)          - Load the contents of the address in Rs into Rd
+    1 0 1 1  0 0 1 1  -  (LDM (Rs) Rd)        - Load the contents of the address at the address in Rs into Rd
+    1 0 1 1  0 1 0 0  -  (LDM + Rs Rd)        - Load the contents of the address in Rs into Rd, then increment Rs
+    1 0 1 1  0 1 0 1  -  (LDM (+ Rs) Rd)      - Load the contents of the address at the address in Rs into Rd, then increment Rs
+    1 0 1 1  0 1 1 0  -  (LDM Rs #xZZZZ Rd)   - Load the contents of the Rs + #xZZZZ into Rd
+    1 0 1 1  0 1 1 1  -  (LDM (Rs #xZZZZ) Rd) - Load the contents of the address at the address Rs + #xZZZZ into Rd
 
 
-	
 
-	
-	
+### Store to memory ###
+
+    Opcode   Cond
+    -------  -------
+    1 1 0 0  0 0 0 0  -  (STM Rs #xZZZZ)      - Store Rs to #xZZZZ
+    1 1 0 0  0 0 0 1  -  (STM Rs (#xZZZZ))    - Store Rs to the address at #xZZZZ
+    1 1 0 0  0 0 1 0  -  (STM Rs Rx)          - Store Rs to the address in Rx
+    1 1 0 0  0 0 1 1  -  (STM Rs (Rx))        - Store Rs to the address at the address in Rx
+    1 1 0 0  0 1 0 0  -  (STM Rs + Rx)        - Store Rs to the address in Rx, then increment Rx
+    1 1 0 0  0 1 0 1  -  (STM Rs (+ Rx))      - Store Rs to the address at the address in Rx, then increment Rx
+    1 1 0 0  0 1 1 0  -  (STM Rs Rx #xZZZZ)   - Store Rs to the address Rx + #xZZZZ
+    1 1 0 0  0 1 1 1  -  (STM Rs (Rx #xZZZZ)) - Store Rs to the address at the address Rx + #xZZZZ
+
+Operations that take on register as source or destination has second byte assembled as either depnding on source/destination:
+
+    0 0 0 0  D D D D
+    S S S S  0 0 0 0
+
+Operations that take register source and destination has second byte assembled as:
+
+    S S S S  D D D D
+
+Operations that take two source registers has second byte assembled as:
+
+    S S S S  D D D D
+
+
+
+## Unused instruction space so far ##
+
+Got any suggestions?
+
+    Opcode   Cond
+    -------  -------
+    1 1 0 1  0 0 0 0
+    1 1 1 0  0 0 0 0
+    1 1 1 1  0 0 0 0
+
+
+
 ## ASSEMBLY CONVENTIONS ##
+
+All instructions that have more than one operand generally has data travel from LEFT to RIGHT. Eg:
+
+    (MOV Rs Rd)     - Moves Rs to Rd
+    (STM Rs #xZZZZ) - Stores Rs to the address #xZZZZ
+
+So an instructino OPR with SOURCE and DESTINATION as arguments follows the rule:
+
+    (OPR SOURCE DESTINATION)
+
+
 
 ### Pseudo instructions ###
 
-These pseudo instructions are built into the assembler, this makes code cleaner.
+These pseudo instructions are built into the assembler, this makes code cleaner because it allows for more complex operations to be written. Pseudo instructions begin with a $
 
-    (SHL Rs) - Simple ADD Rn,Rn - shifts all bits towards the carry bit, highest significant bit sent into carry
-    (TST Rs) - XOR Rn,Rn - Tests if a register is zero or not.
-    (JNZ #xZZZZ) - Jump if no zero flag set
-    (JNS #xZZZZ) - Jump if no sign flag set
-    (JNC #xZZZZ) - Jump if no carry flag set
+    ($TST Rs)               - XOR Rn,Rn - Tests if a register is zero or not.
+    ($CMP Rx Rx)            - Performs a (SUB Rx Rx) but restores the registers, so effectively only sets flags.
+    ($TRA #xSRC #xDST)      - Transfer byte of memory at address #xSRC to address #xDST
+    ($BTR #xZZ #xSRC #xDST) - Block transfer of #xZZ number of bytes from #xSRC to #xDST
+    ($PSA)                  - Push all registers onto return stack, apart from PC + RP
+    ($POA)                  - Pop all registers from return stack, apart from PC + RP19
 
 
 ### Assembly directives ###
@@ -203,14 +295,14 @@ Labels are used to write programs, you dont want to be dealing with straight add
 Above example shoves a label and a couple of instructions.
 
 
-Below shows an ASCII string "BAR" that will be placed in memory at FOO, FOO is a label, beginning in memory at the first character of the string
+Below shows an ASCII string "BAR" that will be placed in memory at FOO, FOO is a label, beginning in memory at the first character of the string. Within the assembler .ASCII is translated to .LABEL and then .RAW. .ASCIZ is translated to .LABEL and .RAW with #x00 terminating the string.
 
     (.ASCII FOO "BAR")
     (.ASCIZ <label> "ZERO TERMINATED STRING, ADDS 0x00 AT END OF STRING")
 
 Below is syntax for BYTE and WORD and DATA:
 
-    (.RAW #xFF)
+    (.RAW #xFF ...)
     (.BYTE <label> #xZZ)
     (.WORD <label> #xZZZZ)
     (.DATA <label> #xZZ #xZZ ... #xZZ)
@@ -219,7 +311,7 @@ Byte defines the label as a byte, this is used to map labels to interrupt codez,
 
 Word defines the label as the address, this is used to map labels to addresses. This time, any referance to the label in the rest of the program will return the value of the word. ie (.WORD HUE 0xFE5A) Would return 0xFE5A in (JMP HUE)
 
-Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data.
+Data will dump the list of data in order into memory, the label will return the address of the first item of the list of data. This is translated into .LABEL and .RAW within the assembler.
 
 Raw does the same as Data but there is no label mapped to the area where it its dumped into memory.
 
