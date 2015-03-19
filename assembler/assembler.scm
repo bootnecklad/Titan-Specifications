@@ -1,7 +1,20 @@
+;;; THIS ORIGINAL FILE WAS WRITTEN BY QUADRESCENCE
+;;; https://github.com/tarballs_are_good
+;;; https://bitbucket.org/tarballs_are_good
+;;;
+;;; Copyright (c) 2013 Robert Smith & Marc Cleave
+;;; ???
+
+(use extras)
 (use (srfi 1))
 (use (srfi 13))
-(load "~/Code/T-I-T-A-N/CPU-DEFINITIONS.scm")
+
+(load "~/Code/Titan-Specifications/assembler/CPU-DEFINITIONS.scm")
+
 (define nil '())
+
+;;; errors out when something is not implemented
+(define (not-implemented) (error "not implemented yet"))
 
 (define assemble
   (lambda (program offset)
@@ -204,3 +217,19 @@
             (cdr key-value)
             ;; Keep searching the environment.
             (env-lookup name (cdr env))))))
+
+
+
+;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;
+
+
+;;; gets program frome file
+(define read-titan-file
+  (lambda (filename)
+    (call-with-input-file filename read)))
+
+;;; opening files and things
+(if (not (= (length (command-line-arguments)) 2))
+    (print "Useage: assemble input-file address-offset")
+    (assemble (read-titan-file (car (command-line-arguments)))
+              (string->number (cadr (command-line-arguments)))))

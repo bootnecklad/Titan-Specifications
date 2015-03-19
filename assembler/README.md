@@ -8,29 +8,31 @@ An Assembler for Titan written in scheme.
 
     (assemble program-name address-offset)
 
+    ./assemble input-file address-offset
+
 ### Example ###
 
-First define a valid Titan program
+Write a valid titan program to a file:
 
-    (define example-program '(
-    (.LABEL LOOP)
-       (LDI R0 #x0000)   ; Fetch byte from set of byes in memory
-       (TST R0)          ; Tests byte fetched
-       (JPZ END)         ; If 0x00 then end of the set
-       (INC R1)          ; Next address must be +1 from previous
-       (JMP LOOP)        ; Fetch next byte
-    (.LABEL END)
-       (HLT)))           ; Halt
+    ((NOP)
+     (ADD R1 R2)
+     (.DATA VALUES 170 187 204)
+     (NOP)
+     (.LABEL LABEL-NAME-TEST)
+     (ADD RF RA)
+     (JUMP LABEL-NAME-TEST))
 
-Then,
+Then using CHICKEN, compile the assembler and assemble the file.
 
-    #;7> (assemble example-program 0)
-    Length of program in bytes: 16
+    $ csc assembler.scm -o assembler
+    $ ./assemble
+    Useage: assemble input-file address-offset
+    $ ./assembler testprogram.asm 1000
+    Length of program in bytes: 12
     
-    0000 : B0 00 00 15 
-    0004 : 00 A1 00 0D 
-    0008 : 18 10 A0 00 
-    000C : 00 A0 00 0D 
+    03E8 : 00 01 12 AA 
+    03EC : BB CC 00 01 
+    03F0 : FA 02 03 EF 
 
 ## Conventions ##
 
@@ -38,4 +40,4 @@ All conventions are in the specification which can be found [here](https://githu
 
 ## But bootnecklad there are assemblers out there already, why? ##
 
-Because I can't keep track of them all the time or update them when I change something that annoys said writers of assemblers.
+Because I can't keep track of them and update them when I change something in the spec.
