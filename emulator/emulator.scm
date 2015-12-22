@@ -7,8 +7,9 @@
 
 (define nil '())
 (use srfi-13)
+(use srfi-18)
 (use srfi-69)
-(use (srfi 43))
+(use vector-lib)
 (use numbers)
 
 ;;;;;;;;
@@ -66,6 +67,49 @@
   (string-upcase (if (> n #xF)
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
+
+(define start-io-stuff
+  (lambda (cpu)
+    (map (lambda (char) (buffer-push cpu char)) (string->list (read-line)))
+    (display (cpu-serial-buffer titan))
+    (newline)))
+
+(define io-thread (make-thread (start-io-stuff titan) "IO Thread"))
+
+(thread-start! io-thread)
+
+(define serial-buffer-count
+  (lambda (cpu)
+    (vector-ref (cpu-serial-buffer cpu) 0)))
+
+(define inc-serial-buffer-count
+  (lambda (cpu)
+    (if (= 256 (serial-buffer-count cpu))
+        (error "Serial buffer overflow")
+        (vector-set! (cpu-serial-buffer cpu) 0 (+ 1 (vector-ref (cpu-serial-buffer cpu) 0))))))
+
+(define dec-serial-buffer-count
+  (lambda (cpu)
+    (if (= 0 (serial-buffer-count cpu))
+        (vector-set! (cpu-serial-buffer cpu) 0 0)
+        (vector-set! (cpu-serial-buffer cpu) 0 (- (serial-buffer-count cpu) 1)))))
+
+(define buffer-push
+  (lambda (cpu value)
+    (inc-serial-buffer-count cpu)
+    (vector-set! (cpu-serial-buffer cpu) (serial-buffer-count cpu) value)))
+
+(define buffer-pop
+  (lambda (cpu)
+    (dec-serial-buffer-count cpu)
+    (vector-ref (cpu-serial-buffer cpu) (+ 1 (serial-buffer-count cpu)))))
+
+(define buffer-read
+  (lambda (cpu)
+    (vector-ref (cpu-serial-buffer cpu) (serial-buffer-count cpu))))
+
+
+
 
 ;;;;;;;;
 ;;;
@@ -294,7 +338,7 @@
     (if (not (= #x10 reg))
 	(begin (write-memory! cpu address (read-register cpu reg))
 	       (store-all-registers cpu (add1 address) (add1 reg)))))
-  (store-all-registers cpu int-addr 0))
+  (store-all-registers cpu address 0))
 
 (define (restore-registers cpu address)
   (define (read-all-registers cpu address reg)
@@ -408,7 +452,7 @@
 (define (INSTRUCTION-rte cpu)
   (clear-interrupt-request (read-memory cpu interrupt-handler-software-address))
   (enable-interrupts cpu)
-  (restore-regiters cpu)
+  (restore-registers cpu)
   (controller cpu))
 
 (define (INSTRUCTION-psh cpu)
