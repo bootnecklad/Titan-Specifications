@@ -1,15 +1,13 @@
 ;;; Titan emulator
 ;;;
-;;; A, B, X, Y REGISTERS16 registers
-;;; 16 bit PROGRAM COUNTER
-;;; ZERO SIGN CARRY   ALU STATES
-;;; 64k x 8bit MEMORY
+;;; For the specifications of this CPU, please see Specifications.md
 
 (define nil '())
 (use srfi-13)
 (use srfi-18)
 (use srfi-69)
 (use vector-lib)
+(require-extension mailbox)
 (use numbers)
 
 ;;;;;;;;
@@ -68,48 +66,54 @@
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
 
-(define start-io-stuff
+;;; Isn't quad just the best?
+;;; quad replaced map with for-each as map returns a result and allocates a result list
+;;; Whats the point in allocating lots of lists and just chucking them away
+(define io-stuff
   (lambda (cpu)
-    (map (lambda (char) (buffer-push cpu char)) (string->list (read-line)))
-    (display (cpu-serial-buffer titan))
-    (newline)))
+    (lambda ()
+      (for-each (lambda (char) (buffer-push cpu char))
+                (string->list (read-line)))
+      (display (cpu-serial-buffer cpu))
+      (newline))))
 
-(define io-thread (make-thread (start-io-stuff titan) "IO Thread"))
+(define io-thread #f)
 
-(thread-start! io-thread)
-
-(define serial-buffer-count
+;;; set! is okay here, io-thread only gets set once
+(define start-io
   (lambda (cpu)
-    (vector-ref (cpu-serial-buffer cpu) 0)))
+    (if io-thread
+        (error "IO thread already started!")
+        (set! io-thread (make-thread (io-stuff cpu) "IO Thread")))
+    (thread-start! io-thread)))
 
-(define inc-serial-buffer-count
+(define cpu-thread #f)
+
+(define controller
   (lambda (cpu)
-    (if (= 256 (serial-buffer-count cpu))
-        (error "Serial buffer overflow")
-        (vector-set! (cpu-serial-buffer cpu) 0 (+ 1 (vector-ref (cpu-serial-buffer cpu) 0))))))
+      (let* ((address (pc cpu))
+             (opcode (read-memory cpu address))
+             (action (lookup-opcode opcode)))
+        (interrupt-handler cpu)
+        (action cpu))))
 
-(define dec-serial-buffer-count
+(define start-cpu
   (lambda (cpu)
-    (if (= 0 (serial-buffer-count cpu))
-        (vector-set! (cpu-serial-buffer cpu) 0 0)
-        (vector-set! (cpu-serial-buffer cpu) 0 (- (serial-buffer-count cpu) 1)))))
+    (let ((th (make-thread (lambda () (controller cpu)) "cpu thread")))
+      (thread-start! th) th)))
 
-(define buffer-push
-  (lambda (cpu value)
-    (inc-serial-buffer-count cpu)
-    (vector-set! (cpu-serial-buffer cpu) (serial-buffer-count cpu) value)))
+(define send-input
+  (lambda (cpu input)
+    (for-each (lambda (char) (mailbox-send! (cpu-input-mailbox cpu) char))
+              (input->bytes input))))
 
-(define buffer-pop
+(define input->bytes
+  (lambda (input)
+    (map char->integer (string->list input))))
+
+(define fetch-input
   (lambda (cpu)
-    (dec-serial-buffer-count cpu)
-    (vector-ref (cpu-serial-buffer cpu) (+ 1 (serial-buffer-count cpu)))))
-
-(define buffer-read
-  (lambda (cpu)
-    (vector-ref (cpu-serial-buffer cpu) (serial-buffer-count cpu))))
-
-
-
+    (mailbox-receive! (cpu-input-mailbox cpu) 1 0)))
 
 ;;;;;;;;
 ;;;
@@ -130,7 +134,9 @@
   registers
   conditions
   interrupts
-  serial-buffer)
+  serial-buffer
+  input-mailbox
+  output-mailbox)
 
 ;;;
 (define (new-cpu)
@@ -139,11 +145,15 @@
 	    (make-vector 16 0)
 	    (make-vector 3 #f)
 	    (make-vector 9 #f)
-	    (make-vector 256 0)))
+	    (make-vector 256 0)
+            (make-mailbox "Input Mailbox")
+            (make-mailbox "Output Mailbox")))
 
 ;;; reads particular address in memory
 (define (read-memory cpu address)
-  (vector-ref (cpu-memory cpu) address))
+  (case address
+    ((#xFF00) (fetch-input cpu))
+    (else (vector-ref (cpu-memory cpu) address))))
 
 ;;; writes word in memory
 (define (write-memory! cpu address word)
@@ -296,12 +306,6 @@
   (install-opcode #b11100000 INSTRUCTION-ldm)
   (install-opcode #b11110000 INSTRUCTION-stm))
 
-(define (controller cpu)
-  (let* ((address (pc cpu))
-         (opcode (read-memory cpu address))
-         (action (lookup-opcode opcode)))
-    (interrupt-handler cpu)
-    (action cpu)))
 
 (define (disable-interrupts cpu)
   (vector-set! (cpu-interrupts cpu) 8 #t))
