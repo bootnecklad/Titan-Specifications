@@ -69,14 +69,19 @@
 ;;; Isn't quad just the best?
 ;;; quad replaced map with for-each as map returns a result and allocates a result list
 ;;; Whats the point in allocating lots of lists and just chucking them away
+
+
+;;; This is very broken and needs fixing
 (define io-stuff
   (lambda (cpu)
     (lambda ()
-      (for-each (lambda (char) (buffer-push cpu char))
-                (string->list (read-line)))
-      (display (cpu-serial-buffer cpu))
-      (newline))))
+      (do () (#f) 
+        (let ((output (mailbox-receive! (cpu-output-mailbox cpu) 1 0)))
+          (if (not (= output 0))
+            (display (integer->char output))))))))
+;;; ^^^ VERY BROKEN
 
+                
 (define io-thread #f)
 
 ;;; set! is okay here, io-thread only gets set once
@@ -157,7 +162,9 @@
 
 ;;; writes word in memory
 (define (write-memory! cpu address word)
-  (vector-set! (cpu-memory cpu) address word))
+  (case address
+    ((#xFF00) (mailbox-send! (cpu-output-mailbox cpu) word))
+    (else (vector-set! (cpu-memory cpu) address word))))
 
 
 ;;; quad wrote this can u tell?
@@ -595,6 +602,7 @@
 (define (clr-pc cpu)
   (write-register! cpu 'PROGRAM-COUNTER 0))
 
+;;; To use this, it requires you to load the assembler as well.
 (define (assemble-and-load cpu prog addr)
   (define (deposit-prog cpu prog addr)
     (if (null? prog)
