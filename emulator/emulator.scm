@@ -66,22 +66,16 @@
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
 
-;;; Isn't quad just the best?
-;;; quad replaced map with for-each as map returns a result and allocates a result list
-;;; Whats the point in allocating lots of lists and just chucking them away
+;;; Isn't quad just the best? Threading.
 
 
-;;; This is very broken and needs fixing
 (define io-stuff
   (lambda (cpu)
     (lambda ()
       (do () (#f) 
-        (let ((output (mailbox-receive! (cpu-output-mailbox cpu) 1 0)))
-          (if (not (= output 0))
-            (display (integer->char output))))))))
-;;; ^^^ VERY BROKEN
+        (let ((output (mailbox-receive! (cpu-output-mailbox cpu))))
+         (display (integer->char output)))))))
 
-                
 (define io-thread #f)
 
 ;;; set! is okay here, io-thread only gets set once
@@ -118,7 +112,7 @@
 
 (define fetch-input
   (lambda (cpu)
-    (mailbox-receive! (cpu-input-mailbox cpu) 1 0)))
+    (mailbox-receive! (cpu-input-mailbox cpu))))
 
 ;;;;;;;;
 ;;;
@@ -602,7 +596,6 @@
 (define (clr-pc cpu)
   (write-register! cpu 'PROGRAM-COUNTER 0))
 
-;;; To use this, it requires you to load the assembler as well.
 (define (assemble-and-load cpu prog addr)
   (define (deposit-prog cpu prog addr)
     (if (null? prog)
