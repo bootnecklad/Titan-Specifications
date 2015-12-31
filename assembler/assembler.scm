@@ -357,30 +357,31 @@
   (resolve prog nil nil))
 
 (define convert-autoincrement
-       (lambda (instr)
-         (if (null? instr)
-             nil
-             (cons (if (vector? (car instr))
-                       (vector-ref (car instr) 0)
-                       (car instr))
-                   (convert-autoincrement (cdr instr))))))
-
+  (lambda (instr)
+    (if (null? instr)
+        nil
+        (cons (if (vector? (car instr))
+                  (vector-ref (car instr) 0)
+                  (car instr))
+              (convert-autoincrement (cdr instr))))))
+  
 ;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
 (define (assembler prog offset)
   (let* ((prog-one (append-map desugar-directives-transformer prog))
-	 (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
-	 (prog-three (desugar-labels prog-two offset))
+         (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
+         (prog-three (desugar-labels prog-two offset))
          (prog-three-point-five (map convert-autoincrement prog-three))
          (prog-three-point-six (map flatten prog-three-point-five))
-	 (prog-four/env (alias-environment prog-three-point-six))
-	 (prog-four (first prog-four/env))
-	 (env (second prog-four/env))
+         (prog-four/env (alias-environment prog-three-point-six))
+         (prog-four (first prog-four/env))
+         (env (second prog-four/env))
 	 (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
 	 (prog-six (substitute-all prog-five registers))
 	 (prog-seven (map convert prog-six))
-	 (prog-eight (merge prog prog-seven))
-	 (prog-nine (flatten prog-eight)))
-    prog-nine))
+         (prog-eight (first (alias-environment prog-three-point-five)))
+	 (prog-nine (merge prog-eight prog-seven))
+	 (prog-ten (flatten prog-nine)))
+    prog-ten))
 
 ;;; does all the dirty work
 (define (do-merge orig-instr instr)
@@ -413,12 +414,13 @@
 (define assemble-RSRD
   (lambda (instr)
     (list (car instr)
-          (combine-nibbles (cadr instr) (caddr instr)))))
+          (combine-nibbles (cadr instr)
+                           (caddr instr)))))
 
 (define assemble-RS
   (lambda (instr)
-    (list (car instr)
-          (combine-nibbles (cadr instr) 0))))
+    (list (bitwise-ior (car instr)
+                           (cadr instr)))))
 
 (define assemble-LDC
   (lambda (instr)
@@ -434,42 +436,63 @@
 ;;; (LDM #xBABE R0) (LDM R0 R1)  (LDM (#xCAFE) R1) (LDM (+ R1) R0) (LDM (R2 #xDEAD) R3) (LDM (R0) R1) (LDM + R1 R3) (LDM R2 #xDEAD R3)
 ;;; (STM R0 #xBABE) (STM R1 R0)  (STM R1 (#xCAFE)) (STM R0 (+ R1)) (LDM R3 (R2 #xDEAD)) (STM R1 (R0)) (STM R3 + R1) (STM R3 R2 #xDEAD)
 
+(define assemble-LDM
+  (lambda (orig-instr instr)
+    (list (car instr) 0 (split-address #xFFFF))))
+
+(define assemble-STM
+  (lambda (orig-instr instr)
+    (list (car instr) 0 (split-address #xFFFF))))
+
+
 (define assemble-JMP
   (lambda (orig-instr instr)
     (cond
+
+ ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
      ((and (list? (second orig-instr))
            (register? (car (second orig-instr)))
            (= 2 (length (second orig-instr))))
       (list (bitwise-ior (car instr) 7) (combine-nibbles (second instr) 0) (split-address (last instr))))
 
+;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
      ((and (register? (second orig-instr))
            (number? (last instr))
            (= 3 (length instr)))
       (list (bitwise-ior (car instr) 6) (combine-nibbles (second instr) 0) (split-address (last instr))))
 
-     ((and (vector? (second orig-instr))
-           (list? (vector-ref (second orig-instr) 0)))
+
+;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
+
+     ((and (list? (second orig-instr))
+           (eq? '+ (cadr orig-instr)))
       (list (bitwise-ior (car instr) 5) (combine-nibbles (last instr) 0)))
 
-     ((and (vector? (second orig-instr))
-           (register? (vector-ref (second orig-instr) 0)))
+;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
+     ((and (eq? '+ (cadr orig-instr))
+           (register? (last orig-instr)))
       (list (bitwise-ior (car instr) 4) (combine-nibbles (last instr) 0)))
 
+;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
      ((and (number? (second instr))
            (not (list? (second orig-instr)))
            (not (register? (second orig-instr))))
       (list (bitwise-ior (car instr) 0) (split-address (second instr))))
 
+;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
      ((and (number? (second instr))
            (list? (second orig-instr))
            (not (register? (car (second orig-instr)))))
       (list (bitwise-ior (car instr) 1) (split-address (second instr))))
 
+;;; (JMP Rs)          - Jump to the address in Rs
      ((and (= (length instr) 2)
            (register? (second orig-instr)))
       (list (bitwise-ior (car instr) 2) (combine-nibbles (second instr) 0)))
 
-     ((= (length (second orig-instr)) 1)
+;;; (JMP (Rs))        - Jump to the address at the address in Rs
+     ((and (list? (second orig-instr))
+           (register? (car orig-instr)))
       (list (bitwise-ior (car instr) 3) (combine-nibbles (last instr) 0))))))
 
 ;;; opening files and things

@@ -27,4 +27,3 @@
 
 ;;; defines all the directives
 (define directives '(.RAW .LABEL .BYTE .WORD .LABEL .DATA .ASCII .ASCIZ))
-
