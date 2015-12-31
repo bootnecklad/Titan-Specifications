@@ -16,28 +16,22 @@ To use the emulator you need to do the following in the REPL:
 
 Then loading machine code/writing registers can be done via the poke-values function:
 
-    (poke-values cpu 0 
-               #b00000000
-	       #b00000000
-	       #b00000000
-	       #b10010000
-	       #b00000001
-	       #b00000000
-	       #b00000000
-	       #b00010000
-	       #b00000001
-	       #b00000000
-	       #b10100000
-	       #b11110000
-	       #b00000000)
-    (poke-values cpu #b1111000000000000
-	       #b10010000
-	       #b00010010
-	       #b00000000
-	       #b00000001)
-    (write-register! titan 0 1))
+    (poke-values titan 0 
+       #b00000000   ; (NOP)
+       #b11100001   ; (LDM #xFF00 R1)
+       #b11111111
+       #b00000000
+       #b00000000   ; (NOP)
+       #b00000000   ; (NOP)
+       #b00000000   ; (NOP)
+       #b00000000   ; (NOP)
+       #b00000001)  ; (HLT)
+       
+You can provide the CPU with input, like you would with a serial terminal:
+
+    (send-input titan "AAAAAA")
 
 
 Then finally running the cpu will output register stages when execution has halted.
 
-    (controller titan)
+    (start-cpu titan)

@@ -33,6 +33,12 @@
     (if (first args)
         (list #x02 (split-address (first args)))
         3)))
+
+(define CLEAR
+  (lambda args
+    (if (first args)
+        (list #0x99 (first args))
+        1)))
         
 (define .RAW
   (lambda args

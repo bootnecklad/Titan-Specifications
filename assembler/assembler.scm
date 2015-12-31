@@ -40,9 +40,10 @@
          (prog-three (desugar-labels prog-two offset))
          (prog-four/env (alias-environment prog-three))
          (prog-four (first prog-four/env))
+         (prog-five (map flatten prog-four))
          (env (append REGISTER-TABLE (second prog-four/env)))
-         (prog-five (map (lambda (instr) (substitute-operands instr env)) prog-four))
-         (prog-six (flatten (reverse (assemble-program prog-five nil)))))
+         (prog-six (map (lambda (instr) (substitute-operands instr env)) prog-five)))
+      ;   (prog-seven (flatten (reverse (assemble-program prog-six nil)))))
     prog-six))
 
 ;;; prints DA PROG

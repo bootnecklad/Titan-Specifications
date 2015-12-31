@@ -23,10 +23,11 @@
 	(LOR R2 R1)
 
 (.LABEL POINTER->DEL)
+	(SHL R0)
 	(INC R1)
 
 (.LABEL DEL->POINTER)
-	(DEC R1)
+	(D
 
 (.LABEL DEL-PUSH)
 	(PSH R1)
@@ -135,15 +136,4 @@
 (.LABEL RESET-STACK)
 	(CLR RC)
 	(CLR RD) 		; Clears stack
-
-
-
-
-
- 
- 
- 
- 
- 
- 
  

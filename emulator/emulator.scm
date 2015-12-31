@@ -1,15 +1,16 @@
 ;;; Titan emulator
 ;;;
-;;; A, B, X, Y REGISTERS16 registers
-;;; 16 bit PROGRAM COUNTER
-;;; ZERO SIGN CARRY   ALU STATES
-;;; 64k x 8bit MEMORY
+;;; For the specifications of this CPU, please see Specifications.md
 
 (define nil '())
 (use srfi-13)
 (use srfi-18)
 (use srfi-69)
 (use vector-lib)
+<<<<<<< HEAD
+=======
+(require-extension mailbox)
+>>>>>>> 7b99329c8f09fc8183b3bddb890e777f59ff6459
 (use numbers)
 
 ;;;;;;;;
@@ -68,6 +69,7 @@
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
 
+<<<<<<< HEAD
 (define start-io-stuff
   (lambda (cpu)
     (map (lambda (char) (buffer-push cpu char)) (string->list (read-line)))
@@ -110,6 +112,55 @@
 
 
 
+=======
+;;; Isn't quad just the best? Threading.
+
+
+(define io-stuff
+  (lambda (cpu)
+    (lambda ()
+      (do () (#f) 
+        (let ((output (mailbox-receive! (cpu-output-mailbox cpu))))
+         (display (integer->char output)))))))
+
+(define io-thread #f)
+
+;;; set! is okay here, io-thread only gets set once
+(define start-io
+  (lambda (cpu)
+    (if io-thread
+        (error "IO thread already started!")
+        (set! io-thread (make-thread (io-stuff cpu) "IO Thread")))
+    (thread-start! io-thread)))
+
+(define cpu-thread #f)
+
+(define controller
+  (lambda (cpu)
+      (let* ((address (pc cpu))
+             (opcode (read-memory cpu address))
+             (action (lookup-opcode opcode)))
+        (interrupt-handler cpu)
+        (action cpu))))
+
+(define start-cpu
+  (lambda (cpu)
+    (let ((th (make-thread (lambda () (controller cpu)) "cpu thread")))
+      (thread-start! th) th)))
+
+(define send-input
+  (lambda (cpu input)
+    (for-each (lambda (char) (mailbox-send! (cpu-input-mailbox cpu) char))
+              (input->bytes input))))
+
+(define input->bytes
+  (lambda (input)
+    (map char->integer (string->list input))))
+
+(define fetch-input
+  (lambda (cpu)
+    (mailbox-receive! (cpu-input-mailbox cpu))))
+>>>>>>> 7b99329c8f09fc8183b3bddb890e777f59ff6459
 
 ;;;;;;;;
 ;;;
@@ -130,7 +181,9 @@
   registers
   conditions
   interrupts
-  serial-buffer)
+  serial-buffer
+  input-mailbox
+  output-mailbox)
 
 ;;;
 (define (new-cpu)
@@ -139,15 +192,21 @@
 	    (make-vector 16 0)
 	    (make-vector 3 #f)
 	    (make-vector 9 #f)
-	    (make-vector 256 0)))
+	    (make-vector 256 0)
+            (make-mailbox "Input Mailbox")
+            (make-mailbox "Output Mailbox")))
 
 ;;; reads particular address in memory
 (define (read-memory cpu address)
-  (vector-ref (cpu-memory cpu) address))
+  (case address
+    ((#xFF00) (fetch-input cpu))
+    (else (vector-ref (cpu-memory cpu) address))))
 
 ;;; writes word in memory
 (define (write-memory! cpu address word)
-  (vector-set! (cpu-memory cpu) address word))
+  (case address
+    ((#xFF00) (mailbox-send! (cpu-output-mailbox cpu) word))
+    (else (vector-set! (cpu-memory cpu) address word))))
 
 
 ;;; quad wrote this can u tell?
@@ -296,12 +355,6 @@
   (install-opcode #b11100000 INSTRUCTION-ldm)
   (install-opcode #b11110000 INSTRUCTION-stm))
 
-(define (controller cpu)
-  (let* ((address (pc cpu))
-         (opcode (read-memory cpu address))
-         (action (lookup-opcode opcode)))
-    (interrupt-handler cpu)
-    (action cpu)))
 
 (define (disable-interrupts cpu)
   (vector-set! (cpu-interrupts cpu) 8 #t))
