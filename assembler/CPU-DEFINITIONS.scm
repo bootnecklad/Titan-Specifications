@@ -110,169 +110,93 @@
 ;; Where S is Register-Source and D is Register-Destination
 (define assemble-RSRD
   (lambda (instr)
-    (list (car instr)
-          (combine-nibbles (cadr instr)
-                           (caddr instr)))))
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           (second (operands instr))))))
 
 ;; Assembles instructions with byte format:
 ;; #x0S
 ;; Where S is Register-Source (Also Destination, eg (NOT R0)
 (define assemble-RS
   (lambda (instr)
-    (list (bitwise-ior (car instr)
-                           (cadr instr)))))
+    (list (bitwise-ior (opcode instr)
+                       (first (operands instr))))))
 
 ;; Assembles Load Constant instruction
 (define assemble-LDC
   (lambda (instr)
-    (list (bitwise-ior (car instr) (caddr instr))
-          (cadr instr))))
+    (list (bitwise-ior (opcode instr)
+                       (second (operands instr)))
+          (first (operands instr)))))
 
 ;; Assembles standard JMP instruction, (JMP #xBABE)
-(define assemble-STD-JMP
-  (lambda (instr)
-    (list (car instr)
-          (split-address (cadr instr)))))
-
 (define assemble-JUMP
   (lambda (instr)
     (list (first instr)
-          (split-address (second instr)))))
+          (split-address (first (operands instr))))))
 
 (define assemble-JUMP-INDIRECT
   (lambda (instr)
-    nil))
+    (list (opcode instr)
+          (split-address (first (operands instr))))))
 
 (define assemble-JUMP-REGISTER
   (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-INDIRECT-REGISTER
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-INDIRECT-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           (second (operands instr))))))
 
 (define assemble-JUMP-OFFSET
   (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-INDIRECT-OFFSET
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-IF-ZERO
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-IF-SIGN
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-IF-CARRY
-  (lambda (instr)
-    nil))
-
-
-(define assemble-JUMP-SUBROUTINE
-  (lambda (instr)
-    nil))
-
-
-(define assemble-RETURN-SUBROUTINE
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           (second (operands instr)))
+          (split-address (third (operands instr))))))
 
 (define assemble-LOAD
   (lambda (instr)
-    nil))
-
-
-(define assemble-LOAD-INDIRET
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (second (operands instr))
+                           0)
+          (split-address (first (operands instr))))))
 
 (define assemble-LOAD-REGISTER
   (lambda (instr)
-    nil))
-
-
-(define assemble-LOAD-REGISTER-INDIRECT
-  (lambda (instr)
-    nil))
-
-
-(define assemble-LOAD-REGISTER-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
-
-(define assemble-LOAD-REGISTER-INDIRECT-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           (second (operands instr)))
+          (combine-nibbles (third (operands instr))
+                           0))))
 
 (define assemble-LOAD-OFFSET
   (lambda (instr)
-    nil))
-
-
-(define assemble-LOAD-INDIRECT-OFFSET
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           (second (operands instr)))
+          (split-address (third (operands instr)))
+          (combine-nibbles (fourth (operands instr))
+                           0))))
 
 (define assemble-STORE
   (lambda (instr)
-    nil))
-
-
-(define assemble-STORE-INDIRET
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (first (operands instr))
+                           0)
+          (split-address (second (operands instr))))))
 
 (define assemble-STORE-REGISTER
   (lambda (instr)
-    nil))
-
-
-(define assemble-STORE-REGISTER-INDIRECT
-  (lambda (instr)
-    nil))
-
-
-(define assemble-STORE-REGISTER-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
-
-(define assemble-STORE-REGISTER-INDIRECT-AUTOINCREMENT
-  (lambda (instr)
-    nil))
-
+    (list (opcode instr)
+          (combine-nibbles (second (operands instr))
+                           (third (operands instr)))
+          (combine-nibbles (first (operands instr))
+                           0))))
 
 (define assemble-STORE-OFFSET
   (lambda (instr)
-    nil))
-
-
-(define assemble-STORE-INDIRECT-OFFSET
-  (lambda (instr)
-    nil))
+    (list (opcode instr)
+          (combine-nibbles (second (operands instr))
+                           (third (operands instr)))
+          (combine-nibbles (first (operands instr))
+                           0)
+          (split-address (fourth (operands instr))))))
