@@ -70,3 +70,14 @@
 		  (list 'POR 'R1)
 		  (list 'POR 'R0)))
     (else (list instr))))
+
+
+;; Bad joojoo
+
+
+
+(define jmp-counter 0)
+
+(define (counter)
+  (begin (set! jmp-counter (add1 jmp-counter))
+	 jmp-counter))

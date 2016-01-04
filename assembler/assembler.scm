@@ -1,13 +1,10 @@
 ;;; THIS ORIGINAL FILE WAS WRITTEN BY QUADRESCENCE
+;;; THEN BNL POLISHED IT OFF. ;)
 ;;; https://github.com/tarballs_are_good
 ;;; https://bitbucket.org/tarballs_are_good
 ;;;
 ;;; Copyright (c) 2013 Robert Smith & Marc Cleave
 ;;; ???
-
-
-;;;  first pass just counts how long every ins is and works out the address of variables and labels
-;;;  second actually assembles the ins and uses the values it aquired from the first pass
 
 (use extras)
 (use srfi-1)
@@ -17,89 +14,124 @@
 
 (define nil '())
 
-;;; errors out when something is not implemented
-(define (not-implemented) (error "not implemented yet"))
+;; Errors out when something is not implemented
+(define not-implemented
+  (lambda ()
+    (error "not implemented yet")))
 
-;;; gets program frome file
+;; Gets program frome file
 (define read-titan-file
   (lambda (filename)
     (call-with-input-file filename read)))
 
-;; Different components of a Titan program
-(define (directive? instr)
-  (and (pair? instr)
-       (char=? #\. (string-ref (symbol->string (if (symbol? (car instr))
-                                                   (car instr)
-                                                   'NOTSYMBOL))  0))))
 
-(define (label? instr)
-  (and (pair? instr)
-       (eq? '.LABEL (car instr))))
 
-(define (instruction? instr)
-  (and (pair? instr)
-       (not (directive? instr))))
+
+;; === Different components of a Titan program ===
+
+;; Checks if an instruction is a directive
+(define directive?
+  (lambda (instr)
+    (and (pair? instr)
+         (char=? #\.x (string-ref (symbol->string (if (symbol? (car instr))
+                                                      (car instr)
+                                                      'NOTSYMBOL))  0)))))
+
+;; Checks if an instruction is a label
+(define label?
+  (lambda (instr)
+    (and (pair? instr)
+         (eq? '.LABEL (car instr)))))
+
+;; Checks if an instruction is an instruction
+(define instruction?
+  (lambda (instr)
+    (and (pair? instr)
+         (not (directive? instr)))))
+
+;; Checks if argument is a register
+(define (register? s)
+  (and (member s (map car registers)) #t))
+
+;; Checks if an operand is an index, ie (Rh Rl)
+(define word-index?
+  (lambda (operand)
+    (and (list? operand)
+         (register? (first operand))
+         (register? (second operand)))))
 
 ;; A way to extract parts of a list LST when F? is true.
-(define (extract f? lst)
-  (let loop ((remaining lst)
-             (filtered nil))
-    (if (null? remaining)
-        (reverse filtered)
-        (let ((item (car remaining)))
-          (loop (cdr remaining)
-                (if (f? item)
-                    (cons item filtered)
-                    filtered))))))
+(define extract
+  (lambda (f? lst)
+    (let loop ((remaining lst)
+               (filtered nil))
+      (if (null? remaining)
+          (reverse filtered)
+          (let ((item (car remaining)))
+            (loop (cdr remaining)
+                  (if (f? item)
+                      (cons item filtered)
+                      filtered)))))))
 
-;; A way to extract components from a Titan program
-(define (get-labels prog)
-  (extract label? prog))
+;; === A way to extract components from a Titan program ===
 
-(define (get-instructions prog)
-  (extract instruction? prog))
+;; extracts labels from program
+(define get-labels
+  (lambda (prog)
+    (extract label? prog)))
 
-(define (get-directives prog)
-  (extract directive? prog))
+;; Extracts instructions from program
+(define get-instructions
+  (lambda (prog)
+    (extract instruction? prog)))
 
-;;; gets length of instr, whether that be an instructions, label or directive
-(define (compute-length instr)
-  (cond
-   ((label? instr) 0)
-   ((instruction? instr) (instr-length instr))
-   ((directive? instr) (compute-directive-length instr))
-   (else (error "INVALD TITAN ASM"))))
+;; Extracts directives from program
+(define get-directives
+  (lambda (prog)
+    (extract directive? prog)))
 
-;;; gets the length of executable instruction (in bytes)
-(define (instr-length instr)
-  (if (member (car instr) (flatten opcode-lengths))
-      (if (cadr (member (car instr) (flatten opcode-lengths)))
-          (cadr (member (car instr) (flatten opcode-lengths)))
-          (compute-instruction-length instr))
-      (begin (display (car instr)) (error "INVALID TITAN INSTRUCTION"))))
+;; Extracts opcode from an instruction
+(define opcode
+  (lambda (instr)
+    (car instr)))
 
-(define register?
-  (lambda (register)
-    (if (and (symbol? register)
-             (member register (flatten registers)))
-        #t
-        #f)))
+;; Extracts operands from an instruction
+(define operands
+  (lambda (instr)
+    (cdr instr)))
 
-(define autoincrement?
-       (lambda (instr)
-         (if (null? instr)
-             #f
-             (or (vector? (car instr))
-                  (autoincrement? (cdr instr))))))
 
-;;; computes the lengths of instructions with the same opcode but different addressing mode
+
+
+;; Gets length of instr, whether that be an instructions, label or directive
+(define compute-length
+  (lambda (instr)
+    (cond
+     ((label? instr) 0)
+     ((instruction? instr) (instr-length instr))
+     ((directive? instr) (compute-directive-length instr))
+     (else (error "INVALD TITAN ASM"
+                  instr)))))
+
+;; Gets the length of executable instruction (in bytes)
+(define instr-length
+  (lambda (instr)
+    (if (member (car instr) (flatten opcode-lengths))
+        (if (cadr (member (car instr) (flatten opcode-lengths)))
+            (cadr (member (car instr) (flatten opcode-lengths)))
+            (compute-instruction-length instr))
+        (error "INVALID TITAN INSTRUCTION"
+               instr))))
+
+;; Computes the lengths of instructions with the same opcode but different addressing mode
 (define compute-instruction-length
   (lambda (instr)
     (case (car instr)
       ((JMP) (compute-length-instr instr))
       ((LDM) (compute-length-instr instr))
       ((STM) (compute-length-instr (list (car instr) (caddr instr) (cadr instr))))
-      (else (begin (print instr) (error "INVALID TITAN INSTRUCITON"))))))
+      (else (error "INVALID TITAN INSTRUCITON"
+                   instr)))))
 
 (define compute-length-instr
   (lambda (instr)
@@ -112,12 +144,12 @@
            (register? (second instr))) 2)
      ((and (register? (second instr))
            (register? (last instr))) 2)
-     ((autoincrement? instr) 2)
      ((eq? '+ (second instr)) 2)
      ((or (symbol? (third instr))
           (number? (third instr))) 4)
      ((number? (second instr)) 4)
-     (else (begin (print instr) (error "INVALID TITAN INSTRUCTION"))))))
+     (else (error "INVALID TITAN INSTRUCTION"
+                  instr)))))
 
 (define compute-length-list
   (lambda (instr)
@@ -133,176 +165,124 @@
            (= 2 (length (second instr)))) 4)
      (else 3))))
 
-;; tells us if an instruction contains an index word...
-(define (contains-word? instr)
-  (cond
-   ((null? instr) #f)
-   ((word? (car instr)) #t)
-   (else (contains-word? (cdr instr)))))
+;; Computes the length of a directive
+(define compute-directive-length
+  (lambda (instr)
+    (case (car instr)
+      ((.RAW) (length (cdr instr)))
+      ((.BYTE .WORD .LABEL) 0)
+      ((.DATA) (length (cddr instr)))
+      ((.ASCII) (string-length (caddr instr)))
+      ((.ASCIZ) (+ 1 (string-length (caddr instr))))
+      (else (error "INVALID DIRECTIVE"
+                   instr)))))
 
-;;; computes the length of a directive
-(define (compute-directive-length instr)
-  (case (car instr)
-    ((.RAW) (length (cdr instr)))
-    ((.BYTE .WORD .LABEL) 0)
-    ((.DATA) (length (cddr instr)))
-    ((.ASCII) (string-length (caddr instr)))
-    ((.ASCIZ) (+ 1 (string-length (caddr instr))))
-    (else (error "INVALID DIRECTIVE"))))
+;; Loops through assembly program assigning lengths to instructions
+(define apply-lengths
+  (lambda (prog)
+    (map compute-length prog)))
 
-;;; loops through assembly program assigning lengths to instructions
-(define (apply-lengths prog)
-  (map compute-length prog))
+;; Creates address list for program
+(define address-list
+  (lambda (prog)
+    (cons 0 (running-total (apply-lengths prog) 0))))
 
-;;; creats address list for program
-(define (address-list prog)
-  (cons 0 (running-total (apply-lengths prog)0)))
+;; Copies to a new list
+(define running-total
+  (lambda (lst sum)
+    (if (null? lst)
+        nil
+        (cons (+ sum (car lst))
+              (running-total (cdr lst) (+ sum (car lst)))))))
 
-;;; copies to a new list
-(define (running-total lst sum)
-  (if (null? lst)
-      nil
-      (cons (+ sum (car lst))
-            (running-total (cdr lst) (+ sum (car lst))))))
+;; Begins conversion of assembly to binary
+(define convert
+  (lambda (instr)
+    (cond
+     ((instruction? instr) (convert-instr instr))
+     ((directive? instr) (cdr instr))
+     (else (error "INVALID TITAN INSTRUCTION"
+                  instr)))))
 
-;;; tells us if an operand is an index, ie (Rh Rl)
-(define (word? v)
-  (vector? v))
+;; Converts assembly instructions into machine code values
+(define convert-instr
+  (lambda (instr)
+    (if (member (opcode instr) (flatten opcodes))
+        (cons (cadr (member (opcode instr) (flatten opcodes)))
+              (cdr instr))
+        (error "INVALID TITAN INSTRUCTION"
+               instr))))
 
-;;; begins converting process
-(define (convert instr)
-  (cond
-   ((instruction? instr) (convert-instr instr))
-   ((directive? instr) (cdr instr))
-   (else (begin (display instr) (error "INVALD TITAN ASSEMBLY")))))
+;; Substitutes everything in the program&table
+(define substitute-all
+  (lambda (lst tbl)
+    (if (null? tbl)
+        lst
+        (substitute-all (substitute lst (caar tbl) (cadar tbl)) (cdr tbl)))))
 
-;;; converts assembly instructions into machine code values
-(define (convert-instr instr)
-  (if (member (car instr) (flatten opcodes))
-      (cons (cadr (member (car instr) (flatten opcodes)))
-            (cdr instr))
-      (begin (display instr) (error "INVALID TITAN INSTRUCTION"))))
+;; Does the dirty work for substituting
+(define substitute
+  (lambda (prog label value)
+    (map (lambda (element)
+           (cond
+            ((eq? label element) value)
+            ((list? element) (substitute element label value))
+            (else element)))
+         prog)))
 
-(define (substitute-all lst tbl)
-  (if (null? tbl)
-      lst
-      (substitute-all (substitute lst (caar tbl) (cadar tbl)) (cdr tbl))))
+;; Adds offset to address-list
+(define add-offset
+  (lambda (offset lst)
+    (map (lambda (item) (+ item offset)) lst)))
 
-(define (substitute prog label value)
-  (map (lambda (element)
-	 (cond
-	  ((eq? label element) value)
-	  ((list? element) (substitute element label value))
-	  (else element)))
-       prog))
+;; Combines two nibbles to form a byte
+(define combine-nibbles
+  (lambda (a b)
+    (bitwise-ior (arithmetic-shift a 4)
+                 b)))
 
-;;; adds offset to address-list
-(define (add-offset offset lst)
-  (map (lambda (item) (+ item offset)) lst))
+;; Creates two 8bit values from (should be) 16bit number
+(define split-address
+  (lambda (addr)
+    (if (>= addr 65536)
+        (error "INVALD TITAN ADDRESS"
+               addr)
+        (list (arithmetic-shift addr -8)
+              (bitwise-and #x00ff addr)))))
 
-;;; combines two nibbles to form a byte
-(define (combine-nibbles a b)
-  (bitwise-ior (arithmetic-shift a 4) b))
+;; 'Desugars' aka breaks down directives into simplest form
+(define desugar-directive
+  (lambda (directive)
+    (case (car directive)
+      ((.RAW .BYTE .WORD .LABEL) (list directive))
+      ((.DATA) (list
+                (list '.LABEL (cadr directive))
+                (cons '.RAW (cddr directive))))
+      ((.ASCII) (list
+                 (list '.LABEL (cadr directive))
+                 (cons '.RAW (map char->integer (string->list (caddr directive))))))
+      ((.ASCIZ)  (list
+                  (list '.LABEL (cadr directive))
+                  (append
+                   (cons '.RAW (map char->integer (string->list (caddr directive))))
+                   '(0))))
+      (else (error "INVALID TITAN DIRECTIVE"
+                   (car directive))))))
 
-;;; merges opcodes and operands
-(define (merge orig-prog asm-prog)
-  (if (null? orig-prog)
-      nil
-      (cons (do-merge (car orig-prog) (car asm-prog))
-            (merge (cdr orig-prog) (cdr asm-prog)))))
 
-;;; creates two 8bit values from one number
-(define (split-address addr)
-  (list (arithmetic-shift addr -8)
-        (bitwise-and #x00ff addr)))
-
-;;; prints DA PROG
-(define (print-bytes bytes addr n)
-  (cond
-   ((null? bytes) (newline))
-   ((zero? (remainder n 4)) (newline) (print-word addr) (display ": ") (print-byte (car bytes)) (print-bytes (cdr bytes) (+ addr 4) (+ n 1)))
-   (else (print-byte (car bytes)) (print-bytes (cdr bytes) addr (+ n 1)))))
-
-(define (print-byte n)
-  (display (string-upcase (if (> n #xF)
-                              (sprintf "~X " n)
-                              (sprintf "0~X " n)))))
-(define (print-word n)
-  (display (string-upcase (cond
-			   ((<= n #xF) (sprintf "000~X " n))
-			   ((<= n #xFF) (sprintf "00~X " n))
-			   ((<= n #xFFF) (sprintf "0~X " n))
-			   ((> n #xFFF) (sprintf "~X" n))))))
-
-;;; prints length of program in bytes
-(define (print-length bytes)
-  (display "Length of program in bytes: ")
-  (print (length bytes)))
-
-;;; this is the function that you actually call
-(define (assemble prog offset)
-  (print-length (assembler prog offset))
-  (print-bytes (assembler prog offset) offset 0)
-  (display "\n"))
-
-(define (desugar-directive directive)
-  (case (car directive)
-    ((.RAW .BYTE .WORD .LABEL) (list directive))
-    ((.DATA) (list
-	      (list '.LABEL (cadr directive))
-	      (cons '.RAW (cddr directive))))
-    ((.ASCII) (list
-	       (list '.LABEL (cadr directive))
-	       (cons '.RAW (map char->integer (string->list (caddr directive))))))
-    ((.ASCIZ)  (list
-		(list '.LABEL (cadr directive))
-		(append
-		 (cons '.RAW (map char->integer (string->list (caddr directive))))
-		 '(0))))
-    (else (error "INVALID TITAN DIRECTIVE" (car directive)))))
-
-(define (desugar-directives-transformer instr)
-  (cond
-   ((directive? instr) (desugar-directive instr))
-   ((instruction? instr) (list instr))
-   (else (error "INVALD TITAN ASM"))))
-
-(define jmp-counter 0)
-
-(define (counter)
-  (begin (set! jmp-counter (add1 jmp-counter))
-	 jmp-counter))
+(define desugar-directives-transformer
+  (lambda (instr)
+    (cond
+     ((directive? instr) (desugar-directive instr))
+     ((instruction? instr) (list instr))
+     (else (error "INVALID TITAN INSTRUCTION"
+                  instr)))))
 
 (define (desugar-pseudo-instruction-transformer instr)
   (cond
    ((directive? instr) (list instr))
    ((instruction? instr) (desguar-pseudo-instruction instr))
    (else (error "INVALD TITAN ASM"))))
-
-(define (env-lookup name env)
-  (if (null? env)
-      (error "Couldn't resolve name" name)
-      (let ((key-value (car env)))
-        (if (eq? name (car key-value))
-            ;; Return the value
-            (cdr key-value)
-            ;; Keep searching the environment.
-            (env-lookup name (cdr env))))))
-
-(define (register? s)
-  (and (member s (map car registers)) #t))
-
-(define (substitute-instruction instr env)
-  (cons (car instr)
-        (map (lambda (thing)
-               (substitute-alias thing env))
-             (cdr instr))))
-
-(define (substitute-alias thing env)
-  (cond
-   ((not (symbol? thing)) thing)
-   ((register? thing) thing)
-   (else (env-lookup thing env))))
 
 (define (desugar-labels prog offset)
   (define (desugar prog resolved-prog len)
@@ -322,6 +302,29 @@
   ;; Desugar the labels of our program, starting with the length as
   ;; `offset'.
   (desugar prog nil offset))
+
+(define (env-lookup name env)
+  (if (null? env)
+      (error "Couldn't resolve name" name)
+      (let ((key-value (car env)))
+        (if (eq? name (car key-value))
+            ;; Return the value
+            (cdr key-value)
+            ;; Keep searching the environment.
+            (env-lookup name (cdr env))))))
+
+;; Substitutes instruction for thing built up from environment
+(define (substitute-instruction instr env)
+  (cons (car instr)
+        (map (lambda (thing)
+               (substitute-alias thing env))
+             (cdr instr))))
+
+(define (substitute-alias thing env)
+  (cond
+   ((not (symbol? thing)) thing)
+   ((register? thing) thing)
+   (else (env-lookup thing env))))
   
 (define (alias-environment prog)
   (define (resolve prog resolved-prog env)
@@ -356,34 +359,14 @@
   
   (resolve prog nil nil))
 
-(define convert-autoincrement
-  (lambda (instr)
-    (if (null? instr)
-        nil
-        (cons (if (vector? (car instr))
-                  (vector-ref (car instr) 0)
-                  (car instr))
-              (convert-autoincrement (cdr instr))))))
-  
-;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
-(define (assembler prog offset)
-  (let* ((prog-one (append-map desugar-directives-transformer prog))
-         (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
-         (prog-three (desugar-labels prog-two offset))
-         (prog-three-point-five (map convert-autoincrement prog-three))
-         (prog-three-point-six (map flatten prog-three-point-five))
-         (prog-four/env (alias-environment prog-three-point-six))
-         (prog-four (first prog-four/env))
-         (env (second prog-four/env))
-	 (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
-	 (prog-six (substitute-all prog-five registers))
-	 (prog-seven (map convert prog-six))
-         (prog-eight (first (alias-environment prog-three-point-five)))
-	 (prog-nine (merge prog-eight prog-seven))
-	 (prog-ten (flatten prog-nine)))
-    prog-ten))
+;; Merges opcodes and operands
+(define (merge orig-prog asm-prog)
+  (if (null? orig-prog)
+      nil
+      (cons (do-merge (car orig-prog) (car asm-prog))
+            (merge (cdr orig-prog) (cdr asm-prog)))))
 
-;;; does all the dirty work
+;; Does all the dirty work for merge
 (define (do-merge orig-instr instr)
   (case (car orig-instr)
     ((ADD) (assemble-RSRD instr))
@@ -411,92 +394,55 @@
     ((JSR) (assemble-STD-JMP))
     (else instr)))
 
-(define assemble-RSRD
-  (lambda (instr)
-    (list (car instr)
-          (combine-nibbles (cadr instr)
-                           (caddr instr)))))
+;; Prints DA PROG in nice human readable format
+(define (print-bytes bytes addr n)
+  (cond
+   ((null? bytes) (newline))
+   ((zero? (remainder n 4)) (newline) (print-word addr) (display ": ") (print-byte (car bytes)) (print-bytes (cdr bytes) (+ addr 4) (+ n 1)))
+   (else (print-byte (car bytes)) (print-bytes (cdr bytes) addr (+ n 1)))))
 
-(define assemble-RS
-  (lambda (instr)
-    (list (bitwise-ior (car instr)
-                           (cadr instr)))))
+(define (print-byte n)
+  (display (string-upcase (if (> n #xF)
+                              (sprintf "~X " n)
+                              (sprintf "0~X " n)))))
+(define (print-word n)
+  (display (string-upcase (cond
+			   ((<= n #xF) (sprintf "000~X " n))
+			   ((<= n #xFF) (sprintf "00~X " n))
+			   ((<= n #xFFF) (sprintf "0~X " n))
+			   ((> n #xFFF) (sprintf "~X" n))))))
 
-(define assemble-LDC
-  (lambda (instr)
-    (list (bitwise-ior (car instr) (caddr instr))
-          (cadr instr))))
+;; Prints length of program in bytes
+(define (print-length bytes)
+  (display "Length of program in bytes: ")
+  (print (length bytes)))
 
-(define assemble-STD-JMP
-  (lambda (instr)
-    (list (car instr)
-          (split-address (cadr instr)))))
+;; Function to call to assemble a program & print.
+(define assemble
+  (lambda (prog offset)
+    (print-length (assembler prog offset))
+    (print-bytes (assembler prog offset) offset 0)
+    (display "\n")))
 
+;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
+(define assembler
+  (lambda (prog offset)
+    (let* ((prog-one (append-map desugar-directives-transformer prog))
+           (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
+           (prog-three (desugar-labels prog-two offset))
+           (prog-three-point-six (map flatten prog-three))
+           (prog-four/env (alias-environment prog-three-point-six))
+           (prog-four (first prog-four/env))
+           (env (second prog-four/env))
+           (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
+           (prog-six (substitute-all prog-five registers))
+           (prog-seven (map convert prog-six))
+           (prog-eight (first (alias-environment prog-three-point-five)))
+           (prog-nine (merge prog-eight prog-seven))
+           (prog-ten (flatten prog-nine)))
+      prog-ten)))
 
-;;; (LDM #xBABE R0) (LDM R0 R1)  (LDM (#xCAFE) R1) (LDM (+ R1) R0) (LDM (R2 #xDEAD) R3) (LDM (R0) R1) (LDM + R1 R3) (LDM R2 #xDEAD R3)
-;;; (STM R0 #xBABE) (STM R1 R0)  (STM R1 (#xCAFE)) (STM R0 (+ R1)) (LDM R3 (R2 #xDEAD)) (STM R1 (R0)) (STM R3 + R1) (STM R3 R2 #xDEAD)
-
-(define assemble-LDM
-  (lambda (orig-instr instr)
-    (list (car instr) 0 (split-address #xFFFF))))
-
-(define assemble-STM
-  (lambda (orig-instr instr)
-    (list (car instr) 0 (split-address #xFFFF))))
-
-
-(define assemble-JMP
-  (lambda (orig-instr instr)
-    (cond
-
- ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
-     ((and (list? (second orig-instr))
-           (register? (car (second orig-instr)))
-           (= 2 (length (second orig-instr))))
-      (list (bitwise-ior (car instr) 7) (combine-nibbles (second instr) 0) (split-address (last instr))))
-
-;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
-     ((and (register? (second orig-instr))
-           (number? (last instr))
-           (= 3 (length instr)))
-      (list (bitwise-ior (car instr) 6) (combine-nibbles (second instr) 0) (split-address (last instr))))
-
-
-;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
-
-     ((and (list? (second orig-instr))
-           (eq? '+ (cadr orig-instr)))
-      (list (bitwise-ior (car instr) 5) (combine-nibbles (last instr) 0)))
-
-;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
-     ((and (eq? '+ (cadr orig-instr))
-           (register? (last orig-instr)))
-      (list (bitwise-ior (car instr) 4) (combine-nibbles (last instr) 0)))
-
-;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
-     ((and (number? (second instr))
-           (not (list? (second orig-instr)))
-           (not (register? (second orig-instr))))
-      (list (bitwise-ior (car instr) 0) (split-address (second instr))))
-
-;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
-     ((and (number? (second instr))
-           (list? (second orig-instr))
-           (not (register? (car (second orig-instr)))))
-      (list (bitwise-ior (car instr) 1) (split-address (second instr))))
-
-;;; (JMP Rs)          - Jump to the address in Rs
-     ((and (= (length instr) 2)
-           (register? (second orig-instr)))
-      (list (bitwise-ior (car instr) 2) (combine-nibbles (second instr) 0)))
-
-;;; (JMP (Rs))        - Jump to the address at the address in Rs
-     ((and (list? (second orig-instr))
-           (register? (car orig-instr)))
-      (list (bitwise-ior (car instr) 3) (combine-nibbles (last instr) 0))))))
-
-;;; opening files and things
-
+;; Opens file from command line arguments
 (if (not (= (length (command-line-arguments)) 2))
     (print "Useage: assemble input-file address-offset")
     (assemble (read-titan-file (car (command-line-arguments)))
