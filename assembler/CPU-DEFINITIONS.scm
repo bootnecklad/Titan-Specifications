@@ -116,3 +116,63 @@
      ((and (list? (second orig-instr))
            (register? (car (second orig-instr))))
       (list (bitwise-ior (car instr) 3) (combine-nibbles (last instr) 0))))))
+
+;; Calculates length of JMP instructions
+(define calculate-JMP-length
+  (lambda (instr)
+    (cond
+
+ ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
+     ((and (list? (second orig-instr))
+           (register? (car (second orig-instr)))
+           (= 2 (length (second orig-instr))))
+      #x04)
+
+;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
+     ((and (register? (second orig-instr))
+           (number? (last instr))
+           (= 3 (length instr)))
+      #x04)
+
+;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
+
+     ((and (list? (operands orig-instr))
+           (eq? '+ (cadr orig-instr)))
+      #x02)
+
+;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
+     ((and (eq? '+ (first (operands orig-instr)))
+           (register? (last orig-instr)))
+      #x02)
+
+;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
+     ((and (number? (second instr))
+           (not (list? (second orig-instr)))
+           (not (register? (second orig-instr))))
+      #x03)
+
+;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
+     ((and (number? (second instr))
+           (list? (second orig-instr))
+           (not (register? (car (second orig-instr)))))
+      #x03)
+
+;;; (JMP Rs)          - Jump to the address in Rs
+     ((and (= (length instr) 2)
+           (register? (second orig-instr)))
+      #x02)
+
+;;; (JMP (Rs))        - Jump to the address at the address in Rs
+     ((and (list? (second orig-instr))
+           (register? (car (second orig-instr))))
+      #x02))))
+
+;; Calculates length of LDM instructions
+(define calculate-LDM-length
+  (lambda (instr)
+    #x03))
+
+;; Calculates length of STM instructions
+(define calculate-STM-length
+  (lambda (instr)
+    #x03))

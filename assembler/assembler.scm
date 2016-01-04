@@ -33,7 +33,7 @@
 (define directive?
   (lambda (instr)
     (and (pair? instr)
-         (char=? #\.x (string-ref (symbol->string (if (symbol? (car instr))
+         (char=? #\. (string-ref (symbol->string (if (symbol? (car instr))
                                                       (car instr)
                                                       'NOTSYMBOL))  0)))))
 
@@ -116,54 +116,23 @@
 ;; Gets the length of executable instruction (in bytes)
 (define instr-length
   (lambda (instr)
-    (if (member (car instr) (flatten opcode-lengths))
-        (if (cadr (member (car instr) (flatten opcode-lengths)))
-            (cadr (member (car instr) (flatten opcode-lengths)))
-            (compute-instruction-length instr))
-        (error "INVALID TITAN INSTRUCTION"
-               instr))))
+    (let ((instruction-length (member (car instr) (flatten opcode-lengths))))
+      (if instruction-length
+          (if (cadr instruction-length)
+              (cadr instruction-length)
+              (compute-instruction-length instr))
+          (error "INVALID TITAN INSTRUCTION"
+                 instr)))))
 
 ;; Computes the lengths of instructions with the same opcode but different addressing mode
 (define compute-instruction-length
   (lambda (instr)
     (case (car instr)
-      ((JMP) (compute-length-instr instr))
-      ((LDM) (compute-length-instr instr))
-      ((STM) (compute-length-instr (list (car instr) (caddr instr) (cadr instr))))
+      ((JMP) (calculate-JMP-length instr))
+      ((LDM) (calculate-LDM-length instr))
+      ((STM) (calculate-STM-length instr))
       (else (error "INVALID TITAN INSTRUCITON"
                    instr)))))
-
-(define compute-length-instr
-  (lambda (instr)
-    (cond
-     ((list? (second instr)) (compute-length-list instr))
-     ((and (= (length instr) 2)
-           (or (symbol? (second instr))
-               (number? (second instr)))) 3)
-     ((and (<= (length instr) 2)
-           (register? (second instr))) 2)
-     ((and (register? (second instr))
-           (register? (last instr))) 2)
-     ((eq? '+ (second instr)) 2)
-     ((or (symbol? (third instr))
-          (number? (third instr))) 4)
-     ((number? (second instr)) 4)
-     (else (error "INVALID TITAN INSTRUCTION"
-                  instr)))))
-
-(define compute-length-list
-  (lambda (instr)
-    (cond
-     ((and (= 2 (length instr))
-           (number? (car (second instr)))) 3)
-     ((and (= 3 (length instr))
-           (number? (car (second instr)))) 4)
-     ((eq? '+ (car (second instr))) 2)
-     ((and (register? (car (second instr)))
-           (= 1 (length (second instr)))) 2)
-     ((and (register? (car (second instr)))
-           (= 2 (length (second instr)))) 4)
-     (else 3))))
 
 ;; Computes the length of a directive
 (define compute-directive-length
@@ -437,7 +406,7 @@
            (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
            (prog-six (substitute-all prog-five registers))
            (prog-seven (map convert prog-six))
-           (prog-eight (first (alias-environment prog-three-point-five)))
+           (prog-eight (first (alias-environment prog-three)))
            (prog-nine (merge prog-eight prog-seven))
            (prog-ten (flatten prog-nine)))
       prog-ten)))
