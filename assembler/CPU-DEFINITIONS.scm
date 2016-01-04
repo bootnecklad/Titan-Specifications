@@ -1,24 +1,108 @@
-;; Defines the lengths of the different opcodes, #f if length is variable
-(define opcode-lengths '((NOP 1) (HLT 1) (ADD 2) (ADC 2) (SUB 2) (AND 2) (IOR 2) (XOR 2) (NOT 2)
-                         (SHR 2) (INC 2) (DEC 2) (INT 2) (RTE 1) (CLR 1) (PSH 1) (POP 1) (PEK 1)
-                         (DUP 1) (PSR 1) (POR 1) (PER 1) (DUR 1) (MOV 2) (JPZ 3) (JPS 3) (JPC 3)
-                         (JPI 3) (JSR 3) (RTN 1) (LDC 2) (JMP #f) (LDM #f) (STM #f)))
+(define nil '())
 
-;; Defines the machine code values for different opcodes
-(define opcodes '((NOP #x00) (HLT #x01) (ADD #x10) (ADC #x11) (SUB #x12) (AND #x13) (IOR #x14) (XOR #x15)
-                  (NOT #x16) (SHR #x17) (INC #x18) (DEC #x19) (INT #x20) (RTE #x21) (CLR #x60) (PSH #x70) 
-                  (POP #x80) (PEK #x90) (DUP #x91) (PSR #x83) (POR #x75) (PER #x81) (DUR #x85) (MOV #x90)
-                  (JMP #xA0) (JPZ #xA1) (JPS #xA2) (JPC #xA3) (JPI #xA4) (JSR #xA5) (RTN #xA6) (LDC #xD0)
-                  (LDM #xE0) (STM #xF0)))
+;; Defines all titan instruction opcode values and lengths
+(define titan-instructions '((NO-OPERATION #x00 1)
+                             (HALT #x01 1)
+                             (ADD #x10 2)
+                             (ADD-CARRY #x11 2)
+                             (SUBTRACT #x12 2)
+                             (AND #x13 2)
+                             (IOR #x14 2)
+                             (XOR #x15 2)
+                             (NOT #x16 2)
+                             (SHIFT-RIGHT #x17 2)
+                             (INCREMENT #x18 2)
+                             (DECREMENT #x19 2)
+                             (INTERRUPT #x20 2)
+                             (RETURN-INTERRUPT #x21 1)
+                             (PUSH-DATA #x30 1)
+                             (POP-DATA #x40 1)
+                             (PEEK-DATA #x50 1)
+                             (PUSH-RETURN #x60 1)
+                             (POP-RETURN #x70 1)
+                             (PEEK-RETURN #x80 1)
+                             (CLEAR #x90 1)
+                             (MOVE #xA0 2)
+                             (LOAD-CONSTANT #xB0 2)
+                             (JUMP #xC0 3)
+                             (JUMP-INDIRECT #xC1 3)
+                             (JUMP-REGISTER #xC2 2)
+                             (JUMP-INDIRECT-REGISTER #xC3 2)
+                             (JUMP-AUTOINCREMENT #xC4 2)
+                             (JUMP-INDIRECT-AUTOINCREMENT #xC5 2)
+                             (JUMP-OFFSET #xC6 4)
+                             (JUMP-INDIRECT-OFFSET #xC7 4)
+                             (JUMP-IF-ZERO #xC8 3)
+                             (JUMP-IF-SIGN #xC9 3)
+                             (JUMP-IF-CARRY #xCA 3)
+                             (JUMP-SUBROUTINE #xCB 3)
+                             (RETURN-SUBROUTINE #xCC 1)
+                             (LOAD #xD0 3)
+                             (LOAD-INDIRET #xD1 4)
+                             (LOAD-REGISTER #xD2 3)
+                             (LOAD-REGISTER-INDIRECT #xD4 3)
+                             (LOAD-REGISTER-AUTOINCREMENT #xD5 3)
+                             (LOAD-REGISTER-INDIRECT-AUTOINCREMENT #xD6 3)
+                             (LOAD-OFFSET #xD7 5)
+                             (LOAD-INDIRECT-OFFSET #xD8 5)
+                             (STORE #xE0 4)
+                             (STORE-INDIRET #xE1 4)
+                             (STORE-REGISTER #xE2 3)
+                             (STORE-REGISTER-INDIRECT #xE3 3)
+                             (STORE-REGISTER-AUTOINCREMENT #xE4 3)
+                             (STORE-REGISTER-INDIRECT-AUTOINCREMENT #xE5 3)
+                             (STORE-OFFSET #xE6 5)
+                             (STORE-INDIRECT-OFFSET #xE7 5)))
 
 ;; Defines the machine code values for different registers
 (define registers '((R0 #x0) (R1 #x1) (R2 #x2) (R3 #x3) (R4 #x4) (R5 #x5) (R6 #x6) (R7 #x7)
-                    (R8 #x8) (R9 #x9) (RA #xA) (RB #xB) (RC #xC) (RD #xD) (RE #xE) (RF #xF)))
+                    (R8 #x8) (R9 #x9) (RA #xA) (RB #xB) (RC #xC) (RD #xD) (RE #xE) (RF #xF)
+                    (REGISTER-0 #x0) (REGISTER-1 #x1) (REGISTER-2 #x2) (REGISTER-3 #x3)
+                    (REGISTER-4 #x4) (REGISTER-5 #x5) (REGISTER-6 #x6) (REGISTER-7 #x7)
+                    (REGISTER-8 #x8) (REGISTER-9 #x9) (REGISTER-A #xA) (REGISTER-B #xB)
+                    (REGISTER-C #xC) (REGISTER-D #xD) (REGISTER-E #xE) (REGISTER-F #xF)
+                    (DATA-STACK-POINTER-HIGH #xA) (DATA-STACK-POINTER-LOW #xB)
+                    (RETURN-STACK-POINTER-HIGH #xC) (RETURN-STACK-POINTER-LOW #xD)
+                    (PROGRAM-COUNTER-HIGH #xE) (PROGRAM-COUNTER-LOW #xF)))
+
 
 ;; Defines all the directives
 (define directives '(.INCL .RAW .LABEL .BYTE .WORD .LABEL .DATA .ASCII .ASCIZ))
 
+;; Creates list of all instructions
+(define make-instr-lst
+  (lambda (instrs)
+    (if (null? instrs)
+        nil
+        (cons (list (first (car instrs)))
+              (make-instr-lst (cdr instrs))))))
 
+;; Creates list of instruction opcodes
+(define make-instr-opcodes
+  (lambda (instrs)
+    (if (null? instrs)
+        nil
+        (cons (list (first (car instrs))
+                    (second (car instrs)))
+              (make-instr-opcodes (cdr instrs))))))
+
+;; Creates list of instruction lengths
+(define make-instr-lengths
+  (lambda (instrs)
+    (if (null? instrs)
+        nil
+        (cons (list (first (car instrs))
+                    (third (car instrs)))
+              (make-instr-lengths (cdr instrs))))))
+
+;; Defines the lengths of all instructions in bytes
+(define opcode-lengths (make-instr-lengths titan-instructions))
+
+;; Defines the opcodes for all instructions
+(define opcodes (make-instr-opcodes titan-instructions))
+
+
+;;;; === Functions that actually ASSEMBLE instructions ====
 
 ;; Assembles instructions with byte format:
 ;; #x00 <- OPCODE
@@ -50,129 +134,145 @@
     (list (car instr)
           (split-address (cadr instr)))))
 
-
-;; Definitions for all cases of Load & Store instructions
-;;; (LDM #xBABE R0) (LDM R0 R1)  (LDM (#xCAFE) R1) (LDM (+ R1) R0) (LDM (R2 #xDEAD) R3) (LDM (R0) R1) (LDM + R1 R3) (LDM R2 #xDEAD R3)
-;;; (STM R0 #xBABE) (STM R1 R0)  (STM R1 (#xCAFE)) (STM R0 (+ R1)) (LDM R3 (R2 #xDEAD)) (STM R1 (R0)) (STM R3 + R1) (STM R3 R2 #xDEAD)
-
-;; Needs implementing
-(define assemble-LDM
-  (lambda (orig-instr instr)
-    (list (car instr) 0 (split-address #xFFFF))))
-
-;; Needs implementing
-(define assemble-STM
-  (lambda (orig-instr instr)
-    (list (car instr) 0 (split-address #xFFFF))))
-
-
-;; Big dirty for assembling all JMP cases
-(define assemble-JMP
-  (lambda (orig-instr instr)
-    (cond
-
- ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
-     ((and (list? (second orig-instr))
-           (register? (car (second orig-instr)))
-           (= 2 (length (second orig-instr))))
-      (list (bitwise-ior (car instr) 7) (combine-nibbles (second instr) 0) (split-address (last instr))))
-
-;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
-     ((and (register? (second orig-instr))
-           (number? (last instr))
-           (= 3 (length instr)))
-      (list (bitwise-ior (car instr) 6) (combine-nibbles (second instr) 0) (split-address (last instr))))
-
-
-;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
-
-     ((and (list? (operands orig-instr))
-           (eq? '+ (cadr orig-instr)))
-      (list (bitwise-ior (car instr) 5) (combine-nibbles (last instr) 0)))
-
-;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
-     ((and (eq? '+ (first (operands orig-instr)))
-           (register? (last orig-instr)))
-      (list (bitwise-ior (car instr) 4) (combine-nibbles (last instr) 0)))
-
-;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
-     ((and (number? (second instr))
-           (not (list? (second orig-instr)))
-           (not (register? (second orig-instr))))
-      (list (bitwise-ior (car instr) 0) (split-address (second instr))))
-
-;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
-     ((and (number? (second instr))
-           (list? (second orig-instr))
-           (not (register? (car (second orig-instr)))))
-      (list (bitwise-ior (car instr) 1) (split-address (second instr))))
-
-;;; (JMP Rs)          - Jump to the address in Rs
-     ((and (= (length instr) 2)
-           (register? (second orig-instr)))
-      (list (bitwise-ior (car instr) 2) (combine-nibbles (second instr) 0)))
-
-;;; (JMP (Rs))        - Jump to the address at the address in Rs
-     ((and (list? (second orig-instr))
-           (register? (car (second orig-instr))))
-      (list (bitwise-ior (car instr) 3) (combine-nibbles (last instr) 0))))))
-
-;; Calculates length of JMP instructions
-(define calculate-JMP-length
+(define assemble-JUMP
   (lambda (instr)
-    (cond
+    (list (first instr)
+          (split-address (second instr)))))
 
- ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
-     ((and (list? (second instr))
-           (register? (car (second instr)))
-           (= 2 (length (second instr))))
-      #x04)
-
-;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
-     ((and (register? (second instr))
-           (number? (last instr))
-           (= 3 (length instr)))
-      #x04)
-
-;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
-
-     ((and (list? (operands instr))
-           (eq? '+ (cadr instr)))
-      #x02)
-
-;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
-     ((and (eq? '+ (first (operands instr)))
-           (register? (last instr)))
-      #x02)
-
-;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
-     ((and (number? (second instr))
-           (not (list? (second instr)))
-           (not (register? (second instr))))
-      #x03)
-
-;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
-     ((and (number? (second instr))
-           (list? (second instr))
-           (not (register? (car (second instr)))))
-      #x03)
-
-;;; (JMP Rs)          - Jump to the address in Rs
-     ((and (= (length instr) 2)
-           (register? (second instr)))
-      #x02)
-
-;;; (JMP (Rs))        - Jump to the address at the address in Rs
-     ((and (list? (second instr))
-           (register? (car (second instr))))
-      #x02))))
-
-;; Calculates length of LDM instructions
-(define calculate-LDM-length
+(define assemble-JUMP-INDIRECT
   (lambda (instr)
-    #x03))
+    nil))
 
-;; Calculates length of STM instructions
-(define calculate-STM-length
+(define assemble-JUMP-REGISTER
   (lambda (instr)
-    #x03))
+    nil))
+
+
+(define assemble-JUMP-INDIRECT-REGISTER
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-INDIRECT-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-OFFSET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-INDIRECT-OFFSET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-IF-ZERO
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-IF-SIGN
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-IF-CARRY
+  (lambda (instr)
+    nil))
+
+
+(define assemble-JUMP-SUBROUTINE
+  (lambda (instr)
+    nil))
+
+
+(define assemble-RETURN-SUBROUTINE
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-INDIRET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-REGISTER
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-REGISTER-INDIRECT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-REGISTER-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-REGISTER-INDIRECT-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-OFFSET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-LOAD-INDIRECT-OFFSET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-INDIRET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-REGISTER
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-REGISTER-INDIRECT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-REGISTER-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-REGISTER-INDIRECT-AUTOINCREMENT
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-OFFSET
+  (lambda (instr)
+    nil))
+
+
+(define assemble-STORE-INDIRECT-OFFSET
+  (lambda (instr)
+    nil))

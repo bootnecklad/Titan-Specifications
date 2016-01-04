@@ -118,21 +118,9 @@
   (lambda (instr)
     (let ((instruction-length (member (car instr) (flatten opcode-lengths))))
       (if instruction-length
-          (if (cadr instruction-length)
-              (cadr instruction-length)
-              (compute-instruction-length instr))
+          (cadr instruction-length)
           (error "INVALID TITAN INSTRUCTION"
                  instr)))))
-
-;; Computes the lengths of instructions with the same opcode but different addressing mode
-(define compute-instruction-length
-  (lambda (instr)
-    (case (car instr)
-      ((JMP) (calculate-JMP-length instr))
-      ((LDM) (calculate-LDM-length instr))
-      ((STM) (calculate-STM-length instr))
-      (else (error "INVALID TITAN INSTRUCITON"
-                   instr)))))
 
 ;; Computes the length of a directive
 (define compute-directive-length
@@ -329,38 +317,63 @@
   (resolve prog nil nil))
 
 ;; Merges opcodes and operands
-(define (merge orig-prog asm-prog)
-  (if (null? orig-prog)
+(define (merge prog)
+  (if (null? prog)
       nil
-      (cons (do-merge (car orig-prog) (car asm-prog))
-            (merge (cdr orig-prog) (cdr asm-prog)))))
+      (cons (do-merge (car prog))
+            (merge (cdr prog)))))
 
 ;; Does all the dirty work for merge
-(define (do-merge orig-instr instr)
-  (case (car orig-instr)
+(define (do-merge instr)
+  (case (car instr)
     ((ADD) (assemble-RSRD instr))
-    ((ADC) (assemble-RSRD instr))
-    ((SUB) (assemble-RSRD instr))
+    ((ADD-CARRY) (assemble-RSRD instr))
+    ((SUBTRACT) (assemble-RSRD instr))
     ((AND) (assemble-RSRD instr))
     ((IOR) (assemble-RSRD instr))
     ((XOR) (assemble-RSRD instr))
-    ((MOV) (assemble-RSRD instr))
+    ((MOVE) (assemble-RSRD instr))
     ((NOT) (assemble-RS instr))
-    ((SHR) (assemble-RS instr))
-    ((INC) (assemble-RS instr))
-    ((DEC) (assemble-RS instr))
-    ((CLR) (assemble-RS instr))
-    ((PSH) (assemble-RS instr))
-    ((POP) (assemble-RS instr))
-    ((LDC) (assemble-LDC instr))
-    ((LDM) (assemble-LDM orig-instr instr))
-    ((STM) (assemble-STM orig-instr instr))
-    ((JMP) (assemble-JMP orig-instr instr))
-    ((JPZ) (assemble-STD-JMP))
-    ((JPS) (assemble-STD-JMP))
-    ((JPC) (assemble-STD-JMP))
-    ((JPI) (assemble-STD-JMP))
-    ((JSR) (assemble-STD-JMP))
+    ((SHIFT-RIGHT) (assemble-RS instr))
+    ((INCREMENT) (assemble-RS instr))
+    ((DECREMENT) (assemble-RS instr))
+    ((CLEAR) (assemble-RS instr))
+    ((PUSH-DATA) (assemble-RS instr))
+    ((POP-DATA) (assemble-RS instr))
+    ((PEEK-DATA) (assemble-RS instr))
+    ((PUSH-RETURN) (assemble-RS instr))
+    ((POP-RETURN) (assemble-RS instr))
+    ((PEEK-RETURN) (assemble-RS instr))
+    ((LOAD-CONSTANT) (assemble-LDC instr))
+    ((JUMP) (assemble-JUMP-DIRECT instr))
+    ((JUMP-INDIRECT)  (assemble-JUMP-INDIRECT instr))
+    ((JUMP-REGISTER)  (assemble-JUMP-REGISTER instr))
+    ((JUMP-INDIRECT-REGISTER)  (assemble-JUMP-INDIRECT-REGISTER instr))
+    ((JUMP-AUTOINCREMENT)  (assemble-JUMP-AUTOINCREMENT instr))
+    ((JUMP-INDIRECT-AUTOINCREMENT)  (assemble-JUMP-INDIRECT-AUTOINCREMENT instr))
+    ((JUMP-OFFSET)  (assemble-JUMP-OFFSET instr))
+    ((JUMP-INDIRECT-OFFSET)  (assemble-JUMP-INDIRECT-OFFSET instr))
+    ((JUMP-IF-ZERO)  (assemble-JUMP-IF-ZERO instr))
+    ((JUMP-IF-SIGN)  (assemble-JUMP-IF-SIGN instr))
+    ((JUMP-IF-CARRY)  (assemble-JUMP-IF-CARRY instr))
+    ((JUMP-SUBROUTINE)  (assemble-JUMP-SUBROUTINE instr))
+    ((RETURN-SUBROUTINE)  (assemble-RETURN-SUBROUTINE instr))
+    ((LOAD)  (assemble-LOAD instr))
+    ((LOAD-INDIRET)  (assemble-LOAD-INDIRET instr))
+    ((LOAD-REGISTER)  (assemble-LOAD-REGISTER instr))
+    ((LOAD-REGISTER-INDIRECT)  (assemble-LOAD-REGISTER-INDIRECT instr))
+    ((LOAD-REGISTER-AUTOINCREMENT)  (assemble-LOAD-REGISTER-AUTOINCREMENT instr))
+    ((LOAD-REGISTER-INDIRECT-AUTOINCREMENT)  (assemble-LOAD-REGISTER-INDIRECT-AUTOINCREMENT instr))
+    ((LOAD-OFFSET)  (assemble-LOAD-OFFSET instr))
+    ((LOAD-INDIRECT-OFFSET)  (assemble-LOAD-INDIRECT-OFFSET instr))
+    ((STORE)  (assemble-STORE instr))
+    ((STORE-INDIRET)  (assemble-STORE-INDIRET instr))
+    ((STORE-REGISTER)  (assemble-STORE-REGISTER instr))
+    ((STORE-REGISTER-INDIRECT)  (assemble-STORE-REGISTER-INDIRECT instr))
+    ((STORE-REGISTER-AUTOINCREMENT)  (assemble-STORE-REGISTER-AUTOINCREMENT instr))
+    ((STORE-REGISTER-INDIRECT-AUTOINCREMENT) (assemble-STORE-REGISTER-INDIRECT-AUTOINCREMENT instr))
+    ((STORE-OFFSET)  (assemble-STORE-OFFSET instr))
+    ((STORE-INDIRECT-OFFSET) (assemble-STORE-INDIRECT-OFFSET instr))
     (else instr)))
 
 ;; Prints DA PROG in nice human readable format
@@ -396,19 +409,38 @@
 ;;; THE SLIGHTLY LESS DIRTY COULD ALMOST BE CONSIDERED CLEAN
 (define assembler
   (lambda (prog offset)
-    (let* ((prog-one (append-map desugar-directives-transformer prog))
-           (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
-           (prog-three (desugar-labels prog-two offset))
-           (prog-three-point-six (map flatten prog-three))
-           (prog-four/env (alias-environment prog-three-point-six))
-           (prog-four (first prog-four/env))
-           (env (second prog-four/env))
-           (prog-five (map (lambda (instr) (substitute-instruction instr env)) prog-four))
-           (prog-six (substitute-all prog-five registers))
-           (prog-seven (map convert prog-six))
-           (prog-eight (first (alias-environment prog-three)))
-           (prog-nine (merge prog-eight prog-seven))
-           (prog-ten (flatten prog-nine)))
+    (let*
+        ; breaks down directives into simplest form
+        ((prog-one (append-map desugar-directives-transformer prog))
+
+         ; turns psuedo instructions into actual titan instructions
+         (prog-two (append-map desugar-pseudo-instruction-transformer prog-one))
+         
+         ; 
+         (prog-three (desugar-labels prog-two offset))
+
+         ; Why is this even a thing, flatten is BAD?
+         (prog-four (map flatten prog-three))
+
+         ; BLACK MAGIC
+         (prog-five/env (alias-environment prog-four))
+         (prog-five (first prog-five/env))
+         (env (second prog-five/env))
+
+         ; Substitutes things built up in environment
+         (prog-six (map (lambda (instr) (substitute-instruction instr env)) prog-five))
+
+         ; Substitues registers for values
+         (prog-seven (substitute-all prog-six registers))
+
+         ; Turns instructions into opcode values
+         (prog-eight (map convert prog-seven))
+
+         ; Merges opcodes & operands into bytes
+         (prog-nine (merge prog-eight))
+
+         ; FLATTENS EVERYTHING, ie list of bytes
+         (prog-ten (flatten prog-nine)))
       prog-ten)))
 
 ;; Opens file from command line arguments
