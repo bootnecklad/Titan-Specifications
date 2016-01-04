@@ -123,48 +123,48 @@
     (cond
 
  ;;; (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
-     ((and (list? (second orig-instr))
-           (register? (car (second orig-instr)))
-           (= 2 (length (second orig-instr))))
+     ((and (list? (second instr))
+           (register? (car (second instr)))
+           (= 2 (length (second instr))))
       #x04)
 
 ;;; (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
-     ((and (register? (second orig-instr))
+     ((and (register? (second instr))
            (number? (last instr))
            (= 3 (length instr)))
       #x04)
 
 ;;; (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
 
-     ((and (list? (operands orig-instr))
-           (eq? '+ (cadr orig-instr)))
+     ((and (list? (operands instr))
+           (eq? '+ (cadr instr)))
       #x02)
 
 ;;; (JMP + Rs)        - Jump to the address in Rn, then increment Rs
-     ((and (eq? '+ (first (operands orig-instr)))
-           (register? (last orig-instr)))
+     ((and (eq? '+ (first (operands instr)))
+           (register? (last instr)))
       #x02)
 
 ;;; (JMP #xZZZZ)      - Jump to address #xZZZZ
      ((and (number? (second instr))
-           (not (list? (second orig-instr)))
-           (not (register? (second orig-instr))))
+           (not (list? (second instr)))
+           (not (register? (second instr))))
       #x03)
 
 ;;; (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
      ((and (number? (second instr))
-           (list? (second orig-instr))
-           (not (register? (car (second orig-instr)))))
+           (list? (second instr))
+           (not (register? (car (second instr)))))
       #x03)
 
 ;;; (JMP Rs)          - Jump to the address in Rs
      ((and (= (length instr) 2)
-           (register? (second orig-instr)))
+           (register? (second instr)))
       #x02)
 
 ;;; (JMP (Rs))        - Jump to the address at the address in Rs
-     ((and (list? (second orig-instr))
-           (register? (car (second orig-instr))))
+     ((and (list? (second instr))
+           (register? (car (second instr))))
       #x02))))
 
 ;; Calculates length of LDM instructions
