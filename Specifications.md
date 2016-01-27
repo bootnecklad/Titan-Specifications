@@ -6,12 +6,12 @@ Currently, Titan has the following specifications:
 
     8 bit data bus
     16 8 bit registers, R0 -> RF
-    16 bit data stack pointer(64k data stack) (Mapped to RD)
-    16 bit return stack pointer(64k return stack) (Mapped to RE)
-    16 bit program counter (Mapped to RF)
-	64k addressable memory
+    15 bit data stack pointer(32k data stack) (Mapped to RC(highbyte) & RD(lowbyte))
+    15 bit return stack pointer(32k return stack) (Mapped to RC(highbyte) & RD(lowbyte))
+    16 bit program counter (Mapped to RE(highbtye) & RF(lowbyte))
+	64kb addressable memory
     Capable of 10 8bit arithmetic functions
-    Various addressing modes(Immediate, Indirect, Index, Offset)
+    Various addressing modes
 	Memory mapped I/O
 	
 	Planned Memory map:
@@ -80,8 +80,16 @@ Symbolic expressions make instructions into manipulable objects, that can be cre
 
     Opcode   Cond
     -------  -------
-    0 0 0 0  0 0 0 0  - (NOP) - Performs a No Operation
-    0 0 0 0  0 0 0 1  - (HLT) - Stops the clock
+    0 0 0 0  0 0 0 0  - (NOP)      - Performs a No Operation
+    0 0 0 0  0 0 0 1  - (HLT)      - Stops the clock
+
+## Interrupt/Exception operations ##
+
+These are generally used as system calls, the interrupt vector addresses is stored in the EEPROM on the external address bus.
+All registers are saved in a location in system memory when an interrupt is called. The interrupt will also return with an interrupt code, and the address the interrupt was called at.
+
+    0 0 0 0  0 0 1 0  - (INT #xZZ) - Calls interrupt 0xZZ
+    0 0 0 0  0 0 1 1  - (RTE)      - Return from exception/interrupt
 
 
 
@@ -110,20 +118,6 @@ Second byte of operation that take only one register as an argument is assembled
 
 
 
-## Interrupt/Exception operations ##
-
-These are generally used as system calls, the interrupt vector addresses is stored in the EEPROM on the external address bus.
-All registers are saved in a location in system memory when an interrupt is called. The interrupt will also return with an interrupt code, and the address the interrupt was called at.
-
-    Opcode   Cond
-    -------  -------
-    0 0 1 0  0 0 0 0   -  (INT #xZZ) - Calls interrupt ZZ
-    0 0 1 0  0 0 0 1   -  (RTE) - Return from exception/interrupt
-
-Where ZZZZ ZZZZ is the interrupt to call.
-
-
-
 ## Stack operations ##
 
 ### Data stack ###
@@ -132,9 +126,9 @@ Used for storage of data during program runtime.
 
     Opcode   Operand
     -------  -------
-    0 0 1 1  S S S S  - (PSH Rs) - Pushes Rs onto the data stack
-    0 1 0 0  D D D D  - (POP Rd) - Pops the top of the data stack into Rd
-    0 1 0 1  D D D D  - (PEK Rd) - Peeks the top of data stack into Rd
+    0 0 1 0  S S S S  - (PSH Rs) - Pushes Rs onto the data stack
+    0 0 1 1  D D D D  - (POP Rd) - Pops the top of the data stack into Rd
+    0 1 0 0  D D D D  - (PEK Rd) - Peeks the top of data stack into Rd
 
 ### Return stack ###
 
@@ -142,17 +136,17 @@ Return addresses are pushed onto the stack when Jump Subroutine instruction call
 
     Opcode   Operand
     -------  -------
-    0 1 1 0  S S S S  - (PSH Rs) - Pushes Rs onto the data stack
-    0 1 1 1  D D D D  - (POP Rd) - Pops the top of the data stack into Rd
-    1 0 0 0  D D D D  - (PEK Rd) - Peeks the top of data stack into Rd
+    0 1 0 1  S S S S  - (PSR Rs) - Pushes Rs onto the data stack
+    0 1 1 0  D D D D  - (PPR Rd) - Pops the top of the data stack into Rd
+    0 1 1 1  D D D D  - (PKR Rd) - Peeks the top of data stack into Rd
 
 ## Register operations ##
 
     Opcode   Cond
     -------  -------
-    1 0 0 1  S S S S   -  (CLR Rs)      - Clears Rs
-    1 0 1 0  0 0 0 0   -  (MOV Rs Rd)   - Moves Rs into Rd
-    1 0 1 1  D D D D   -  (LDC #xZZ Rd) - Loads #xZZ into Rd
+    1 0 0 0  S S S S   -  (CLR Rs)      - Clears Rs
+    1 0 0 1  0 0 0 0   -  (MOV Rs Rd)   - Moves Rs into Rd
+    1 0 1 0  D D D D   -  (LDC #xZZ Rd) - Loads #xZZ into Rd
 
 
 Second byte of MOV instruction is assembled into:
@@ -169,26 +163,20 @@ Second byte of LDC instrucitno is assembled into:
 
     Opcode   Cond
     -------  -------
-    1 0 1 0  0 0 0 0  -  (JMP #xZZZZ)      - Jump to address #xZZZZ
-    1 0 1 0  0 0 0 1  -  (JMP (#xZZZZ))    - Jump to the address in #xZZZZ
-    1 0 1 0  0 0 1 0  -  (JMP Rs)          - Jump to the address in Rs
-    1 0 1 0  0 0 1 1  -  (JMP (Rs))        - Jump to the address at the address in Rs
-    1 0 1 0  0 1 0 0  -  (JMP + Rs)        - Jump to the address in Rn, then increment Rs
-    1 0 1 0  0 1 0 1  -  (JMP (+ Rs))      - Jump to the address at the address in Rs, then increment Rs
-    1 0 1 0  0 1 1 0  -  (JMP Rs #xZZZZ)   - Jump to Rs + #xZZZZ
-    1 0 1 0  0 1 1 1  -  (JMP (Rs #xZZZZ)) - Jump to the address at Rs + #xZZZZ
-    1 0 1 0  1 0 0 0  -  (JPZ #xZZZZ)      - Jump to address #xZZZZ if zero flag set
-    1 0 1 0  1 0 0 1  -  (JNC #xZZZZ)      - Jump to address #xZZZZ if zero flag not set
-    1 0 1 0  1 0 1 0  -  (JPS #xZZZZ)      - Jump to address #xZZZZ if sign flag set
-    1 0 1 0  1 0 1 1  -  (JNS #xZZZZ)      - Jump to address #xZZZZ if sign flag not set
-    1 0 1 0  1 1 0 0  -  (JPC #xZZZZ)      - Jump to address #xZZZZ if carry flag set
-    1 0 1 0  1 1 0 1  -  (JNC #xZZZZ)      - Jump to address #xZZZZ if carry flag not set
-    1 0 0 1  0 0 0 0  -  (JPS #xZZZZ)      - Push return address onto return stack and jump to address #xZZZZ
-    1 0 1 0  0 0 0 0  -  (RET)             - POP return address of return stack into PC to return from subroutine
+    1 0 1 1  0 0 0 0  -  (JMP #xZZZZ)       - Jump direct, Jump to address #xZZZZ
+    1 0 1 1  0 0 0 1  -  (JMI #xZZZZ)       - Jump indirect, Jump to the address at #xZZZZ
+    1 0 1 1  0 0 1 0  -  (JMR Rh Rl)        - Jump register, Jump to the address made up from Rh(Register highbyte) and Rl(Register lowbyte)
+    1 0 1 1  0 0 1 1  -  (JRA Rh Rl)        - Jump autoincrement, Jump to the address made up from Rh and Rl, then increment Rh Rl (as 16bit value)
+    1 0 1 1  0 1 0 0  -  (JMO Rh Rl #xZZZZ) - Jump offset, Jump to address: #xZZZZ + RhRl
+    1 0 1 1  0 1 0 1  -  (JMZ #xZZZZ)       - Jump if zero bit set
+    1 0 1 1  0 1 1 0  -  (JMS #xZZZZ)       - Jump if sign bit set
+    1 0 1 1  0 1 1 1  -  (JMC #xZZZZ)       - Jump if carry bit set
+    1 0 1 1  1 0 0 0  -  (JSR #xZZZZ)       - Jump to subroutine #xZZZZ, return address pushed onto return stack, low byte pushed first, high byte pushed second
+    1 0 1 1  1 0 0 1  -  (RSB)              - Return from subroutube, pop address off return stack to Program Counter
 
-Operations that take a register as an argiment has second byte assembled as:
+Operations that take register(s) as an argument are assembled to:
 
-    S S S S  0 0 0 0
+    H H H H  L L L L
 
 Addresses are split when assembled and stored in big endian after the instruciton or regiter source:
 
@@ -203,14 +191,10 @@ Addresses are split when assembled and stored in big endian after the instrucito
 
     Opcode   Cond
     -------  -------
-    1 0 1 1  0 0 0 0  -  (LDM #xZZZZ Rd)      - Load the conents of #xZZZZ into Rd
-    1 0 1 1  0 0 0 1  -  (LDM (#xZZZZ) Rd)    - Load the contents of the address at #xZZZZ into Rd
-    1 0 1 1  0 0 1 0  -  (LDM Rs Rd)          - Load the contents of the address in Rs into Rd
-    1 0 1 1  0 0 1 1  -  (LDM (Rs) Rd)        - Load the contents of the address at the address in Rs into Rd
-    1 0 1 1  0 1 0 0  -  (LDM + Rs Rd)        - Load the contents of the address in Rs into Rd, then increment Rs
-    1 0 1 1  0 1 0 1  -  (LDM (+ Rs) Rd)      - Load the contents of the address at the address in Rs into Rd, then increment Rs
-    1 0 1 1  0 1 1 0  -  (LDM Rs #xZZZZ Rd)   - Load the contents of the Rs + #xZZZZ into Rd
-    1 0 1 1  0 1 1 1  -  (LDM (Rs #xZZZZ) Rd) - Load the contents of the address at the address Rs + #xZZZZ into Rd
+    1 1 0 0  0 0 0 0  -  (LDM #xZZZZ Rd)       - Load the contents of #xZZZZ into Rd
+    1 1 0 0  0 0 0 1  -  (LDR Rh Rl Rd)        - Load the contents of the address made up from Rh and Rl into Rd
+    1 1 0 0  0 0 1 0  -  (LRA Rh Rl Rd)        - Load the contents of the address made up from Rh and Rl into Rd, then increment Rh Rl (as 16bit value)
+    1 1 0 0  0 0 1 1  -  (LMO Rh Rl #xZZZZ Rd) - Load the contents of the address #xZZZZ + RhRl into Rd
 
 
 
@@ -218,14 +202,10 @@ Addresses are split when assembled and stored in big endian after the instrucito
 
     Opcode   Cond
     -------  -------
-    1 1 0 0  0 0 0 0  -  (STM Rs #xZZZZ)      - Store Rs to #xZZZZ
-    1 1 0 0  0 0 0 1  -  (STM Rs (#xZZZZ))    - Store Rs to the address at #xZZZZ
-    1 1 0 0  0 0 1 0  -  (STM Rs Rx)          - Store Rs to the address in Rx
-    1 1 0 0  0 0 1 1  -  (STM Rs (Rx))        - Store Rs to the address at the address in Rx
-    1 1 0 0  0 1 0 0  -  (STM Rs + Rx)        - Store Rs to the address in Rx, then increment Rx
-    1 1 0 0  0 1 0 1  -  (STM Rs (+ Rx))      - Store Rs to the address at the address in Rx, then increment Rx
-    1 1 0 0  0 1 1 0  -  (STM Rs Rx #xZZZZ)   - Store Rs to the address Rx + #xZZZZ
-    1 1 0 0  0 1 1 1  -  (STM Rs (Rx #xZZZZ)) - Store Rs to the address at the address Rx + #xZZZZ
+    1 1 0 1  0 0 0 0  -  (STM Rs #xZZZZ) - Store Rs to #xZZZZ 
+    1 1 0 1  0 0 0 1  -  (STR Rs Rh Rl)  - Store Rs to address made up from Rh and Rl
+    1 1 0 1  0 0 1 0  -  (SRA Rs Rh Rl)  - Store Rs to address made up form Rh and Rl then increment Rh Rl
+    1 1 0 1  0 0 1 1  -  (SMO Rs Rh Rl #xZZZZ) - Store Rs to address #xZZZZ + RhRl
 
 Operations that take on register as source or destination has second byte assembled as either depnding on source/destination:
 
@@ -248,9 +228,8 @@ Got any suggestions?
 
     Opcode   Cond
     -------  -------
-    1 1 0 1  0 0 0 0
-    1 1 1 0  0 0 0 0
-    1 1 1 1  0 0 0 0
+    1 1 1 0  X X X X
+    1 1 1 1  X X X X
 
 
 
@@ -284,9 +263,9 @@ These pseudo instructions are built into the assembler, this makes code cleaner 
 Labels are used to write programs, you dont want to be dealing with straight addresses. It hurts. A lot!
 
     (.LABEL LOOP)
-       (LDI R0 #x0000)   ; Fetch byte from set of byes in memory
-       (TST R0)          ; Tests byte fetched
-       (JPZ END)         ; If 0x00 then end of the set
+       (LDM #x0000 R0)   ; Fetch byte from set of byes in memory
+       ($TST R0)          ; Tests byte fetched
+       (JMZ END)         ; If 0x00 then end of the set
        (INC R1)          ; Next address must be +1 from previous
        (JMP LOOP)        ; Time to get next byte
     (.LABEL END)
