@@ -7,10 +7,7 @@
 (use srfi-18)
 (use srfi-69)
 (use vector-lib)
-<<<<<<< HEAD
-=======
 (require-extension mailbox)
->>>>>>> 7b99329c8f09fc8183b3bddb890e777f59ff6459
 (use numbers)
 
 ;;;;;;;;
@@ -69,16 +66,11 @@
 		     (sprintf "~X " n)
 		     (sprintf "0~X " n))))
 
-<<<<<<< HEAD
 (define start-io-stuff
   (lambda (cpu)
     (map (lambda (char) (buffer-push cpu char)) (string->list (read-line)))
     (display (cpu-serial-buffer titan))
     (newline)))
-
-(define io-thread (make-thread (start-io-stuff titan) "IO Thread"))
-
-(thread-start! io-thread)
 
 (define serial-buffer-count
   (lambda (cpu)
@@ -112,14 +104,13 @@
 
 
 
-=======
 ;;; Isn't quad just the best? Threading.
 
 
 (define io-stuff
   (lambda (cpu)
     (lambda ()
-      (do () (#f) 
+      (do () (#f)
         (let ((output (mailbox-receive! (cpu-output-mailbox cpu))))
          (display (integer->char output)))))))
 
@@ -160,7 +151,6 @@
 (define fetch-input
   (lambda (cpu)
     (mailbox-receive! (cpu-input-mailbox cpu))))
->>>>>>> 7b99329c8f09fc8183b3bddb890e777f59ff6459
 
 ;;;;;;;;
 ;;;
@@ -239,7 +229,7 @@
 
 (define (decrement-register-long cpu register)
   (write-register! cpu register (- (make-register-long cpu register) 1)))
- 
+
 ;;; pushes register onto stack
 (define (push-register cpu register)
   (vector-set! (cpu-stack cpu) (read-register cpu 'STACK-POINTER) (read-register cpu register))
@@ -278,7 +268,7 @@
 (define (make-conditional-jump-instruction condition)
   (lambda (cpu)
     (increment-PROGRAM-COUNTER cpu)
-    (if (condition? condition)
+    (if (condition? cpu condition)
 	(write-register! cpu 'PROGRAM-COUNTER
 			 (+ (arithmetic-shift (read-memory cpu (pc cpu)) 8)
 			    (read-memory cpu (add1 (pc cpu)))))
@@ -377,7 +367,7 @@
 
 (define (interrupt-handling? cpu)
   (vector-ref (cpu-interrupts cpu) 8))
-  
+
 (define (interrupt-handler cpu)
   (if (and (not (interrupt-handling? cpu))
 	   (interrupt-set? cpu))
@@ -385,7 +375,7 @@
 	     (write-memory! cpu interrupt-handler-software-address (- (length (member #t (vector->list (cpu-interrupts cpu)))) 1))
 	     (store-registers cpu (add1 interrupt-handler-software-address))
 	     (write-register-long! cpu 'PROGRAM-COUNTER (+ interrupt-handler-software-address #x11)))))
-	    
+
 (define (store-registers cpu address)
   (define (store-all-registers cpu address reg)
     (if (not (= #x10 reg))
@@ -399,7 +389,7 @@
 	(begin (write-register! cpu reg (read-memory cpu address))
 	       (read-all-registers cpu (add1 address) (add1 reg)))))
   (read-all-registers cpu address 0))
-  
+
 (define (set-condition-states cpu)
   (if (< 255 (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (begin
@@ -411,7 +401,7 @@
       (condition-set! cpu 'SIGN #t))
   (if (zero? (read-register cpu (extract-lower-nibble (fetch-memory cpu))))
       (condition-set! cpu 'ZERO #t)))
-  
+
 (define (prp cpu)
   (print-registers-pretty-func cpu (vector->list (cpu-registers cpu)) 0))
 
@@ -525,7 +515,7 @@
 
 (define (INSTRUCTION-mov cpu)
   (increment-PROGRAM-COUNTER cpu)
-  (write-register! cpu 
+  (write-register! cpu
    (extract-lower-nibble (fetch-memory cpu))
    (read-register cpu (extract-upper-nibble (fetch-memory cpu))))
   (increment-PROGRAM-COUNTER cpu)
@@ -544,7 +534,7 @@
 		   (+ (arithmetic-shift (read-memory cpu (fetch-address-from-memory cpu (pc cpu))) 8)
 		      (read-memory cpu (add1 (fetch-address-from-memory cpu (pc cpu))))))
   (controller cpu))
-		   
+
 ; returns 16 bit value stored at the address in argument of function
 (define (fetch-address-from-memory cpu address)
   (+ (arithmetic-shift (read-memory cpu address) 8)
@@ -651,3 +641,9 @@
 	(begin (write-memory! cpu addr (car prog))
 	       (deposit-prog cpu (cdr prog) (add1 addr)))))
   (deposit-prog cpu (assembler prog addr) addr))
+
+(define io-thread (make-thread (start-io-stuff titan) "IO Thread"))
+
+(thread-start! io-thread)
+
+;; (install-opcodes)
